@@ -1,0 +1,6 @@
+numpy==1.19.5
+scikit-image==0.18.1
+torchvision==0.10.0
+matplotlib==3.3.4
+pycocotools==2.0
+pillow==8.2.0
