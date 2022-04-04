@@ -15,7 +15,7 @@ from matplotlib.patches import Polygon
 import matplotlib.pyplot as plt
 from PIL import Image
 from tqdm import tqdm
-matplotlib.use('TkAgg')
+# matplotlib.use('TkAgg')
 
 
 class CocoDataset(Dataset):
@@ -93,7 +93,7 @@ trainloader = DataLoader(ds, batch_size=8, shuffle=False, num_workers=20)
 
 status_loop = tqdm(trainloader, total=len(trainloader), leave=True)
 
-for i, data in status_loop:
+for i in status_loop:
     pass
 
 
@@ -103,7 +103,7 @@ trainloader = DataLoader(ds, batch_size=8, shuffle=False, num_workers=20)
 
 status_loop = tqdm(trainloader, total=len(trainloader), leave=True)
 
-for i, data in status_loop:
+for i in status_loop:
     pass
 
 
