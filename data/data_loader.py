@@ -88,10 +88,18 @@ class CocoDataset(Dataset):
 
 ds = CocoDataset('../coco2017/annotations/instances_val2017.json', '../coco2017', 'val2017')
 
-#
-#
-trainloader = DataLoader(ds, batch_size=8, shuffle=False, num_workers=4)
-#
+trainloader = DataLoader(ds, batch_size=8, shuffle=False, num_workers=20)
+
+
+status_loop = tqdm(trainloader, total=len(trainloader), leave=True)
+
+for i, data in status_loop:
+    pass
+
+
+ds = CocoDataset('../coco2017/annotations/instances_train2017.json', '../coco2017', 'train2017')
+
+trainloader = DataLoader(ds, batch_size=8, shuffle=False, num_workers=20)
 
 status_loop = tqdm(trainloader, total=len(trainloader), leave=True)
 
