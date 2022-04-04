@@ -66,7 +66,10 @@ class CocoDataset(Dataset):
                             # print(i)
                             for j in range(img.shape[1]):
                                 if poly.contains_point((i, j)):
-                                    array[i, j, :] = cat_id
+                                    try:
+                                        array[i, j, :] = cat_id
+                                    except:
+                                        array[i, j] = cat_id
                 else:
                     assert False, "failing {}".format(img_id)
         return array
