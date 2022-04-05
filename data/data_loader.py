@@ -49,6 +49,7 @@ class CocoDataset(Dataset):
 
         img = Image.open(img_path)
         transformed = CocoDataset.get_img_numpy_array(anns, np.array(img), img_id)
+        os.remove(img_path)
         np.save(transformed_file, transformed)
         return True
 
