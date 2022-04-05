@@ -83,14 +83,16 @@ class CocoDataset(Dataset):
         return array
 
     def __getitem__(self, idx):
-        return self.write_masked_array(self.img_ids[idx])
-
+        # return self.write_masked_array(self.img_ids[idx])
         img_id = self.img_ids[idx]
-        ann_ids = self.coco.getAnnIds(imgIds=img_id, iscrowd=False)
-        anns = self.coco.loadAnns(ann_ids)
+        transformed_file = '../coco2017/cat_id_masked_arrays/{}/{}.npy'.format(self.dir, img_id)
+        img_path = CocoDataset.get_img_path(img_id, self.dir, self.root_dir)
+
+        # ann_ids = self.coco.getAnnIds(imgIds=img_id, iscrowd=False)
+        # anns = self.coco.loadAnns(ann_ids)
 
         img = Image.open(self.get_img_path(img_id, self.dir, self.root_dir))
-        transformed = self.get_img_numpy_array(anns, np.array(img), img_id)
+        transformed = np.load(transformed_file)
         return self.transform(self.resize(img)), \
                self.target_transform(self.resize(Image.fromarray(transformed)))
 
