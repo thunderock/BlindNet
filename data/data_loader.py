@@ -37,12 +37,20 @@ class CocoDataset(Dataset):
         self.target_transform = T.Compose([T.ToTensor()])
 
     def write_masked_array(self, img_id):
+        transformed_file = '../coco2017/cat_id_masked_arrays/{}/{}.npy'.format(self.dir, img_id)
+        img_path = CocoDataset.get_img_path(img_id, self.dir, self.root_dir)
+
+        if os.path.exists(transformed_file):
+            os.remove(img_path)
+            return True
+
         ann_ids = self.coco.getAnnIds(imgIds=img_id, iscrowd=False)
         anns = self.coco.loadAnns(ann_ids)
 
-        img = Image.open(CocoDataset.get_img_path(img_id, self.dir, self.root_dir))
+        img = Image.open(img_path)
         transformed = CocoDataset.get_img_numpy_array(anns, np.array(img), img_id)
-        np.save('../coco2017/cat_id_masked_arrays/{}/{}.npy'.format(self.dir, img_id), transformed)
+        os.remove(img_path)
+        np.save(transformed_file, transformed)
         return True
 
     def __len__(self):
@@ -75,14 +83,16 @@ class CocoDataset(Dataset):
         return array
 
     def __getitem__(self, idx):
-        return self.write_masked_array(self.img_ids[idx])
-
+        # return self.write_masked_array(self.img_ids[idx])
         img_id = self.img_ids[idx]
-        ann_ids = self.coco.getAnnIds(imgIds=img_id, iscrowd=False)
-        anns = self.coco.loadAnns(ann_ids)
+        transformed_file = '../coco2017/cat_id_masked_arrays/{}/{}.npy'.format(self.dir, img_id)
+        img_path = CocoDataset.get_img_path(img_id, self.dir, self.root_dir)
+
+        # ann_ids = self.coco.getAnnIds(imgIds=img_id, iscrowd=False)
+        # anns = self.coco.loadAnns(ann_ids)
 
         img = Image.open(self.get_img_path(img_id, self.dir, self.root_dir))
-        transformed = self.get_img_numpy_array(anns, np.array(img), img_id)
+        transformed = np.load(transformed_file)
         return self.transform(self.resize(img)), \
                self.target_transform(self.resize(Image.fromarray(transformed)))
 
