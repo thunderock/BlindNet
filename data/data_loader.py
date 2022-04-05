@@ -82,10 +82,17 @@ class CocoDataset(Dataset):
                     assert False, "failing {}".format(img_id)
         return array
 
+    def compress_numpy_array(self, path):
+        array = np.load(path)[:, :, 0]
+        np.save(path, array)
+        return True
+
     def __getitem__(self, idx):
         # return self.write_masked_array(self.img_ids[idx])
         img_id = self.img_ids[idx]
         transformed_file = '../coco2017/cat_id_masked_arrays/{}/{}.npy'.format(self.dir, img_id)
+
+        return self.compress_numpy_array(transformed_file)
         img_path = self.get_img_path(img_id, self.dir, self.root_dir)
 
         # ann_ids = self.coco.getAnnIds(imgIds=img_id, iscrowd=False)
