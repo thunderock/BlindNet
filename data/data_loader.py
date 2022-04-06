@@ -61,7 +61,8 @@ class CocoDataset(Dataset):
 
     @staticmethod
     def get_img_numpy_array(anns, img, img_id):
-        array = np.zeros_like(img, dtype=np.uint8)
+        shape = img.shape
+        array = np.zeros(shape[:2], dtype=np.uint8)
         # polygons = []
         # cat = []
         for ann in anns:
@@ -77,10 +78,7 @@ class CocoDataset(Dataset):
                             # print(i)
                             for j in range(img.shape[1]):
                                 if poly.contains_point((i, j)):
-                                    try:
-                                        array[i, j, :] = cat_id
-                                    except:
-                                        array[i, j] = cat_id
+                                    array[i, j] = cat_id
                 else:
                     assert False, "failing {}".format(img_id)
         return array
