@@ -41,7 +41,10 @@ class CocoDataset(Dataset):
         img_path = CocoDataset.get_img_path(img_id, self.dir, self.root_dir)
 
         if os.path.exists(transformed_file):
-            os.remove(img_path)
+            try:
+                os.remove(img_path)
+            except:
+                pass
             return True
 
         ann_ids = self.coco.getAnnIds(imgIds=img_id, iscrowd=False)
