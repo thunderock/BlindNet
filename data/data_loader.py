@@ -83,7 +83,7 @@ class CocoDataset(Dataset):
         return array
 
     def __getitem__(self, idx):
-        # return self.write_masked_array(self.img_ids[idx])
+        return self.write_masked_array(self.img_ids[idx])
         img_id = self.img_ids[idx]
         transformed_file = '../coco2017/cat_id_masked_arrays/{}/{}.npy'.format(self.dir, img_id)
         img_path = self.get_img_path(img_id, self.dir, self.root_dir)
