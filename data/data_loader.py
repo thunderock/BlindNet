@@ -83,7 +83,9 @@ class CocoDataset(Dataset):
         return array
 
     def compress_numpy_array(self, path):
-        array = np.load(path)[:, :, 0]
+        array = np.load(path)
+        assert array.shape[2] in [2,3]
+        array = array[:, :, 0]
         np.save(path, array)
         return True
 
