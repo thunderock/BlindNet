@@ -9,13 +9,10 @@ from torch.utils.data import Dataset, DataLoader
 import skimage.io as io
 import torchvision.transforms as T
 from torchvision.transforms import functional as TF
-from pycocotools.coco import COCO, maskUtils
-import matplotlib
+from pycocotools.coco import COCO
 from matplotlib.patches import Polygon
-import matplotlib.pyplot as plt
 from PIL import Image
 from tqdm import tqdm
-# matplotlib.use('TkAgg')
 
 
 class CocoDataset(Dataset):
@@ -84,7 +81,6 @@ class CocoDataset(Dataset):
         return array
 
     def __getitem__(self, idx):
-        return self.write_masked_array(self.img_ids[idx])
         img_id = self.img_ids[idx]
         transformed_file = '../coco2017/cat_id_masked_arrays/{}/{}.npy'.format(self.dir, img_id)
         img_path = self.get_img_path(img_id, self.dir, self.root_dir)
