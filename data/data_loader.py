@@ -15,6 +15,7 @@ from matplotlib.patches import Polygon
 from PIL import Image
 from tqdm import tqdm
 
+
 class CocoDataset(Dataset):
     @staticmethod
     def get_img_path(img_name, root_dir, dir):
@@ -85,14 +86,10 @@ class CocoDataset(Dataset):
 
 
 
-    def check_and_correct_image(self, X, img_id):
+    def check_and_correct_image(self, X):
 
-        # if X.shape[0] == 2:
-        #     pad = torch.zeros(1, 256, 256)
-        #     X = torch.cat((X, pad), 1)
         l, w = X.shape[:2]
         if X.shape != (l, w, 3):
-            # print(X.shape, img_id)
             # only one channel
             pad = np.zeros((l, w, 1))
             if len(X.shape) == 2:
@@ -100,8 +97,6 @@ class CocoDataset(Dataset):
                 X = np.dstack((X, pad))
             if X.shape != (l, w, 3):
                 X = np.dstack((X, pad))
-        # else:
-            # print("did not pad")
         return X
 
     def __getitem__(self, idx):
@@ -110,18 +105,15 @@ class CocoDataset(Dataset):
         img_path = self.get_img_path(img_id, self.image_root_dir, self.dir)
 
         img = np.array(Image.open(img_path))
-        X = self.transform(self.check_and_correct_image(img, img_id))
+        X = self.transform(self.check_and_correct_image(img))
         y = np.load(transformed_file)
         y = torch.tensor(y)
 
         X = self.resize(X)
-        # Y = self.resize(Image.open(img_path))
         y = self.resize(y.unsqueeze(0))
-        # print(img_id, X.shape, y.shape)
         i, j, h, w = T.RandomCrop.get_params(X, output_size=(256, 256))
         X = TF.crop(X, i, j, h, w)
         # channel first
-        # print(np.array(X).shape)
 
         y = TF.crop(y, i, j, h, w).squeeze(0)
 
@@ -131,17 +123,17 @@ class CocoDataset(Dataset):
 
         # get all the masks
         distinct_cats = torch.unique(y)
-        assert X.shape == (3, 256, 256) and y.shape == (256, 256), "Image shape is not correct {}: img shape: {} target shape: {}".format(img_id, X.shape, y.shape)
+        # assert X.shape == (3, 256, 256) and y.shape == (256, 256), "Image shape is not correct {}: img shape: {} target shape: {}".format(img_id, X.shape, y.shape)
 
         # assert each value between 1 and 90
-        assert (torch.max(distinct_cats) <= 90 and torch.min(distinct_cats) >= 0), "Categories: {}".format(distinct_cats)
-        # assert size of distint_cats is at least 2
-        assert len(distinct_cats) >= 1
+        # assert (torch.max(distinct_cats) <= 90 and torch.min(distinct_cats) >= 0), "Categories: {}".format(distinct_cats)
+        # # assert size of distint_cats is at least 2
+        # assert len(distinct_cats) >= 1
         random_cat = distinct_cats[torch.randint(0, len(distinct_cats), (1,))]
-        y_hat = torch.clone(y)
-        y[y == random_cat] = -1
-        # X is the image, y_hat is the mask and y is the mast with the random category replaced with -1
-        return X, y_hat, y
+        # y_hat = torch.clone(y)
+        # y[y == random_cat] = -1
+        # X is the image, y is the mask, random_cat is a random cat id in the mask
+        return X, y, random_cat
 
 
 
