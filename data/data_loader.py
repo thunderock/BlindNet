@@ -24,18 +24,19 @@ class CocoDataset(Dataset):
         return os.path.join(root_dir, dir, '{}.jpg'.format(x))
 
 
-    def __init__(self, annotations, image_root_dir, mask_root_dir, train):
+    def __init__(self, annotations, image_root_dir, mask_root_dir, train, image_size=84):
         super().__init__()
         self.coco = COCO(annotations)
         self.img_ids = self.coco.getImgIds()
         self.mask_root_dir = mask_root_dir
         self.image_root_dir = image_root_dir
         self.dir = 'train2017' if train else 'val2017'
-        self.resize = T.Resize(size=(256, 256))
+        self.resize = T.Resize(size=(image_size, image_size))
         self.transform = T.Compose([T.ToTensor(),
             T.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
         self.target_transform = T.Compose([T.ToTensor()])
         self.train = train
+        self.image_size = image_size
 
     def write_masked_array(self, img_id):
         transformed_file = '../coco2017/cat_id_masked_arrays/{}/{}.npy'.format(self.dir, img_id)
@@ -111,7 +112,7 @@ class CocoDataset(Dataset):
 
         X = self.resize(X)
         y = self.resize(y.unsqueeze(0))
-        i, j, h, w = T.RandomCrop.get_params(X, output_size=(256, 256))
+        i, j, h, w = T.RandomCrop.get_params(X, output_size=(self.image_size, self.image_size))
         X = TF.crop(X, i, j, h, w)
         # channel first
 
