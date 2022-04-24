@@ -7,7 +7,7 @@ import torch
 import numpy as np
 import os
 from torch.utils.data import DataLoader, random_split
-from modules import BlindNetFFT
+from modules.blind_net_fft import BlindNetFFT
 from data import data_loader
 import torch.nn as nn
 import torch.nn.functional as F
@@ -22,7 +22,7 @@ torch.cuda.manual_seed(YEAR)
 torch.backends.cudnn.deterministic = True
 
 class Trainer:
-    def __init__(self,  learning_rate=5e-4, epochs=35, batch_size=16, val_split=.2):
+    def __init__(self,  learning_rate=5e-4, epochs=35, batch_size=16, val_split=.2, image_size=84):
 
         # Define hparams here or load them from a config file
         self.learning_rate = learning_rate
@@ -30,6 +30,7 @@ class Trainer:
         self.batch_size = batch_size
         self.val_split = val_split
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+        self.image_size = image_size
 
     def train(self, train_loader, model, criterion, optimizer, epoch):
         # Training loop begin
@@ -38,7 +39,8 @@ class Trainer:
         status_loop = tqdm(train_loader, total=len(train_loader), leave=True)
         for i, data in enumerate(status_loop):
             # Get the inputs
-            inputs, labels, _ = data
+            inputs, labels, random_cat = data
+            # print(torch.unique(labels))
             # Move them to the correct device
             inputs, labels = inputs.to(self.device), labels.to(self.device)
             # Zero the parameter gradients
@@ -46,8 +48,13 @@ class Trainer:
             # Forward pass
             outputs = model(inputs)
 
+            labels = labels.reshape(-1)
+            # print(outputs[1050, :])
+            # outputs = torch.max(outputs, dim=1)[1]
+            # assert torch.sum(labels, axis=1).sum() == 1
+            # print(outputs.shape, outputs.shape, random_cat)
             # Compute the loss
-            loss = criterion(F.one_hot(outputs, 91), F.one_hot(labels, 91))
+            loss = criterion(outputs, labels.to(torch.long))
             # Backward pass
             loss.backward()
             # Update the parameters
@@ -74,7 +81,7 @@ class Trainer:
             images, labels, _ = data
             images, labels = images.to(self.device), labels.to(self.device)
             outputs = model(images)
-            running_loss += criterion(outputs, labels)
+            running_loss += criterion(outputs, labels.reshape(-1).to(torch.long))
         avg_loss = running_loss / len(val_loader)
         print('Validation Loss: %.3f' % avg_loss)
         return avg_loss
@@ -82,7 +89,7 @@ class Trainer:
     def train_and_evaluate(self):
         # dataloaders
         dataset = data_loader.CocoDataset(annotations='coco2017/annotations/instances_val2017.json',
-                                          image_root_dir='coco2017', mask_root_dir='cat_id_masked_arrays', train=False)
+                                          image_root_dir='coco2017', mask_root_dir='cat_id_masked_arrays', train=False, image_size=self.image_size)
         img_idxs = dataset.img_ids
         val_split = int(len(img_idxs) * self.val_split)
         # print(val_split, self.val_split)
@@ -91,7 +98,7 @@ class Trainer:
         if val_split > 0:
             validloader = DataLoader(validset, batch_size=self.batch_size, shuffle=True, num_workers=2)
 
-        model = BlindNetFFT().to(self.device)
+        model = BlindNetFFT(image_size=self.image_size).to(self.device)
         # for i, param in enumerate(model.parameters()):
         #     if i < 10:
         #         param.requires_grad = False
@@ -116,3 +123,5 @@ class Trainer:
         torch.save(model.state_dict(), 'model.pt')
 
 
+model = Trainer(image_size=32)
+model.train_and_evaluate()

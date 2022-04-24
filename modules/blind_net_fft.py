@@ -38,7 +38,7 @@ class BlindNetFFT(nn.Module):
             nn.Conv2d(64, 32, kernel_size=3, stride=1, padding=1),
             nn.BatchNorm2d(32),
             nn.ReLU(),
-            nn.Conv2d(32, 1, kernel_size=3, stride=1, padding=1),
+            nn.Conv2d(32, 91, kernel_size=3, stride=1, padding=1),
             nn.ReLU(),
             nn.Upsample(scale_factor=2)
         )
@@ -46,5 +46,6 @@ class BlindNetFFT(nn.Module):
     def forward(self, input):
         midlevel_features = self.midlevel_resnet(input)
         output = self.upsample(midlevel_features)
-        scaled = F.softmax(output) * self.scale_factor
-        return torch.round(scaled)
+        x = F.softmax(output)
+        print(x.shape)
+        return x
