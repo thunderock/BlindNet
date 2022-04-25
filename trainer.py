@@ -88,8 +88,8 @@ class Trainer:
 
     def train_and_evaluate(self, model_save_name, scheduler, optimizer, model):
         # dataloaders
-        dataset = data_loader.CocoDataset(annotations='coco2017/annotations/instances_val2017.json',
-                                          image_root_dir='coco2017', mask_root_dir='cat_id_masked_arrays', train=False, image_size=self.image_size)
+        dataset = data_loader.CocoDataset(annotations='coco2017/annotations/instances_train2017.json',
+                                          image_root_dir='coco2017', mask_root_dir='cat_id_masked_arrays', train=True, image_size=self.image_size)
         img_idxs = dataset.img_ids
         val_split = int(len(img_idxs) * self.val_split)
         # print(val_split, self.val_split)
