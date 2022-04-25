@@ -114,13 +114,14 @@ class SweepTuner:
         optimizer = self.get_optimizer(model, method=optimizer, learning_rate=learning_rate)
         scheduler = self.get_scheduler(optimizer, method=scheduler)
         trainer = Trainer(learning_rate=learning_rate, batch_size=batch_size, image_size=self.image_size,)
-        trainer.train_and_evaluate(model=model, model_save_name="{}_{}_{}".format(model, learning_rate, batch_size),scheduler=scheduler, optimizer=optimizer,data_dir=data_dir)
+        loss = trainer.train_and_evaluate(model=model, model_save_name="{}_{}_{}".format(model, learning_rate, batch_size),scheduler=scheduler, optimizer=optimizer,data_dir=data_dir)
         del (trainer)
         gc.collect()
         torch.cuda.empty_cache()
+        return loss
 
 
-def train(con=None):
+def train_sweep(con=None):
     with wandb.init(config=con):
         con = wandb.config
         print(con)
@@ -139,6 +140,42 @@ def train(con=None):
     gc.collect()
     torch.cuda.empty_cache()
 
+def _get_trial_values(trial):
+    return {
+        'model': trial.suggest_categorical('model', ['resnet18']),
+        'optimizer': trial.suggest_categorical('optimizer', ['adam']),
+        'learning_rate': trial.suggest_loguniform('learning_rate', 0, .01),
+        'batch_size': trial.suggest_int('batch_size', 16),
+        'scheduler': trial.suggest_categorical('scheduler', ['CosineAnnealingLR', 'ReduceLROnPlateau'])
+    }
+
+
+def train_optuna(trial, data_dir="."):
+    model_params = _get_trial_values(trial)
+    print(model_params)
+    trainer = SweepTuner(image_size=32)
+    return trainer.train_and_evaluate(
+        model=model_params['model'],
+        learning_rate=model_params['learning_rate'],
+        batch_size=model_params['batch_size'],
+        optimizer=model_params['optimizer'],
+        scheduler=model_params['scheduler'],
+        data_dir=data_dir)
+
+from botorch.settings import suppress_botorch_warnings, validate_input_scaling
+import optuna
+from optuna.integration.wandb import WeightsAndBiasesCallback
+wandb_kwargs = {"project": "blindnet"}
+wandbc = WeightsAndBiasesCallback(wandb_kwargs=wandb_kwargs)
+
+suppress_botorch_warnings(False)
+validate_input_scaling(True)
+
+study_dir = "sqlite:///{}/{}.db".format("tune/", "study_name")
+sampler = optuna.integration.BoTorchSampler()
+study = optuna.create_study(study_name="study_name", storage="tune", direction='minimize', sampler=sampler)
+study.optimize(lambda trial: train_optuna(trial, data_dir='../input/coco-cat-id-masked-images/'), n_trials=10, n_jobs=4,
+               show_progress_bar=True, callbacks=[wandbc])
 
 # sweep_id = wandb.sweep(sweep_config, project="sweeps_blindnet")
 # run = wandb.agent(sweep_id, train, count=20)

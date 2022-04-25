@@ -122,7 +122,7 @@ class Trainer:
             optimizer.step()
             scheduler.step(loss)
             # scheduler2.step(epoch + 1/self.epochs)
-
+        return best_val_loss
 
 
 # model = Trainer(image_size=32)
