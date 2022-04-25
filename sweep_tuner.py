@@ -174,7 +174,7 @@ study_name = "blindnet_optuna"
 study_dir = "sqlite:///{}/{}.db".format("tune/", study_name)
 sampler = optuna.integration.BoTorchSampler()
 study = optuna.create_study(study_name=study_name, storage=study_dir, direction='minimize', sampler=sampler)
-study.optimize(lambda trial: train_optuna(trial, data_dir='../input/coco-cat-id-masked-images/'), n_trials=10, n_jobs=1,
+study.optimize(lambda trial: train_optuna(trial, data_dir='../input/coco-cat-id-masked-images/'), n_trials=10, n_jobs=4,
                show_progress_bar=True, callbacks=[wandbc])
 
 # sweep_id = wandb.sweep(sweep_config, project="sweeps_blindnet")
