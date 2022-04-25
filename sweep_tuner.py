@@ -144,8 +144,8 @@ def _get_trial_values(trial):
     return {
         'model': trial.suggest_categorical('model', ['resnet18']),
         'optimizer': trial.suggest_categorical('optimizer', ['adam']),
-        'learning_rate': trial.suggest_loguniform('learning_rate', 0, .01),
-        'batch_size': trial.suggest_int('batch_size', 16),
+        'learning_rate': trial.suggest_loguniform('learning_rate', 1e-5, 1e-1),
+        'batch_size': 64,
         'scheduler': trial.suggest_categorical('scheduler', ['CosineAnnealingLR', 'ReduceLROnPlateau'])
     }
 
@@ -170,11 +170,11 @@ wandbc = WeightsAndBiasesCallback(wandb_kwargs=wandb_kwargs)
 
 suppress_botorch_warnings(False)
 validate_input_scaling(True)
-
-study_dir = "sqlite:///{}/{}.db".format("tune/", "study_name")
+study_name = "blindnet_optuna"
+study_dir = "sqlite:///{}/{}.db".format("tune/", study_name)
 sampler = optuna.integration.BoTorchSampler()
-study = optuna.create_study(study_name="study_name", storage="tune", direction='minimize', sampler=sampler)
-study.optimize(lambda trial: train_optuna(trial, data_dir='../input/coco-cat-id-masked-images/'), n_trials=10, n_jobs=4,
+study = optuna.create_study(study_name=study_name, storage=study_dir, direction='minimize', sampler=sampler)
+study.optimize(lambda trial: train_optuna(trial, data_dir='../input/coco-cat-id-masked-images/'), n_trials=10, n_jobs=1,
                show_progress_bar=True, callbacks=[wandbc])
 
 # sweep_id = wandb.sweep(sweep_config, project="sweeps_blindnet")
