@@ -13,6 +13,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 from tqdm import tqdm
+import wandb
 YEAR = 2022
 
 os.environ['PYTHONHASHSEED'] = str(YEAR)
@@ -22,7 +23,7 @@ torch.cuda.manual_seed(YEAR)
 torch.backends.cudnn.deterministic = True
 
 class Trainer:
-    def __init__(self,  learning_rate=5e-4, epochs=35, batch_size=16, val_split=.2, image_size=84):
+    def __init__(self,  learning_rate=5e-4, epochs=1000, batch_size=16, val_split=.2, image_size=84):
 
         # Define hparams here or load them from a config file
         self.learning_rate = learning_rate
@@ -71,7 +72,6 @@ class Trainer:
 
         return running_loss
 
-
     def validate(self, val_loader, model, criterion):
         model.eval()
 
@@ -86,7 +86,7 @@ class Trainer:
         print('Validation Loss: %.3f' % avg_loss)
         return avg_loss
 
-    def train_and_evaluate(self):
+    def train_and_evaluate(self, model_save_name, scheduler, optimizer, model):
         # dataloaders
         dataset = data_loader.CocoDataset(annotations='coco2017/annotations/instances_val2017.json',
                                           image_root_dir='coco2017', mask_root_dir='cat_id_masked_arrays', train=False, image_size=self.image_size)
@@ -98,14 +98,14 @@ class Trainer:
         if val_split > 0:
             validloader = DataLoader(validset, batch_size=self.batch_size, shuffle=True, num_workers=2)
 
-        model = BlindNetFFT(image_size=self.image_size).to(self.device)
+
         # for i, param in enumerate(model.parameters()):
         #     if i < 10:
         #         param.requires_grad = False
         criterion = nn.CrossEntropyLoss()
-        optimizer = optim.Adam(model.parameters(), lr=self.learning_rate)
+        # optimizer = optim.Adam(model.parameters(), lr=self.learning_rate)
 
-        scheduler1 = optim.lr_scheduler.ReduceLROnPlateau(optimizer, patience=3, verbose=True)
+        # scheduler1 = optim.lr_scheduler.ReduceLROnPlateau(optimizer, patience=3, verbose=True)
         # scheduler2 = optim.lr_scheduler.CosineAnnealingWarmRestarts(optimizer, T_0=50, T_mult=1, eta_min=1e-6, verbose=True)
         best_val_loss = np.inf
         # Train and evaluate
@@ -117,11 +117,13 @@ class Trainer:
                     if loss < best_val_loss:
                         print('Saving model..... Loss improved from %.3f to %.3f' % (best_val_loss, loss))
                         best_val_loss = loss
+                        torch.save(model.state_dict(), '{}.pt'.format(model_save_name))
+                        wandb.log({"validation_loss": loss, "epoch": epoch})
             optimizer.step()
-            scheduler1.step(loss)
+            scheduler.step(loss)
             # scheduler2.step(epoch + 1/self.epochs)
-        torch.save(model.state_dict(), 'model.pt')
 
 
-model = Trainer(image_size=32)
-model.train_and_evaluate()
+
+# model = Trainer(image_size=32)
+# model.train_and_evaluate("model_name)
