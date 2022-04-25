@@ -109,12 +109,12 @@ class SweepTuner:
         else:
             raise ValueError('Unknown scheduler method')
 
-    def train_and_evaluate(self, model, learning_rate, batch_size, optimizer, scheduler, data_dir="."):
+    def train_and_evaluate(self, model, learning_rate, batch_size, optimizer, scheduler, name, data_dir="."):
         model = BlindNetFFT(image_size=self.image_size, model_name=model).to(self.device)
         optimizer = self.get_optimizer(model, method=optimizer, learning_rate=learning_rate)
         scheduler = self.get_scheduler(optimizer, method=scheduler)
         trainer = Trainer(learning_rate=learning_rate, batch_size=batch_size, image_size=self.image_size,)
-        loss = trainer.train_and_evaluate(model=model, model_save_name="{}_{}_{}".format(model, learning_rate, batch_size),scheduler=scheduler, optimizer=optimizer,data_dir=data_dir)
+        loss = trainer.train_and_evaluate(model=model, model_save_name=name,scheduler=scheduler, optimizer=optimizer,data_dir=data_dir)
         del (trainer)
         gc.collect()
         torch.cuda.empty_cache()
@@ -160,7 +160,7 @@ def train_optuna(trial, data_dir="."):
         batch_size=model_params['batch_size'],
         optimizer=model_params['optimizer'],
         scheduler=model_params['scheduler'],
-        data_dir=data_dir)
+        data_dir=data_dir, name=trial.number)
 
 from botorch.settings import suppress_botorch_warnings, validate_input_scaling
 import optuna
