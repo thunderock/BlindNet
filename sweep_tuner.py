@@ -113,7 +113,7 @@ class SweepTuner:
         model = BlindNetFFT(image_size=self.image_size, model_name=model).to(self.device)
         optimizer = self.get_optimizer(model, method=optimizer, learning_rate=learning_rate)
         scheduler = self.get_scheduler(optimizer, method=scheduler)
-        trainer = Trainer(learning_rate=learning_rate, batch_size=batch_size)
+        trainer = Trainer(learning_rate=learning_rate, batch_size=batch_size, image_size=self.image_size,)
         trainer.train_and_evaluate(model=model, model_save_name="{}_{}_{}".format(model, learning_rate, batch_size),scheduler=scheduler, optimizer=optimizer,data_dir=data_dir)
         del (trainer)
         gc.collect()
@@ -142,3 +142,11 @@ def train(con=None):
 
 # sweep_id = wandb.sweep(sweep_config, project="sweeps_blindnet")
 # run = wandb.agent(sweep_id, train, count=20)
+# trainner = SweepTuner(image_size=32)
+# trainner.train_and_evaluate(
+#     model="resnet18",
+#     learning_rate=1e-3,
+#     batch_size=16,
+#     optimizer="adam",
+#     scheduler="CosineAnnealingWarmRestarts"
+# )
