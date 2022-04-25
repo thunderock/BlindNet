@@ -50,7 +50,7 @@ parameters_dict.update({
         'max': 0.01
       },
     'batch_size':
-        {"values": [64, 128]}
+        {"values": [16]}
 
     })
 
@@ -125,7 +125,7 @@ def train(con=None):
         con = wandb.config
         print(con)
 
-        trainer = SweepTuner()
+        trainer = SweepTuner(image_size=32)
 
         trainer.train_and_evaluate(
             model=con.model,
