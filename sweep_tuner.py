@@ -50,7 +50,7 @@ parameters_dict.update({
         'max': 0.01
       },
     'batch_size':
-        {"values": [8, 16, 32]}
+        {"values": [64, 128]}
 
     })
 

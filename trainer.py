@@ -23,7 +23,7 @@ torch.cuda.manual_seed(YEAR)
 torch.backends.cudnn.deterministic = True
 
 class Trainer:
-    def __init__(self,  learning_rate=5e-4, epochs=1000, batch_size=16, val_split=.2, image_size=84):
+    def __init__(self,  learning_rate=5e-4, epochs=20, batch_size=16, val_split=.2, image_size=84):
 
         # Define hparams here or load them from a config file
         self.learning_rate = learning_rate
