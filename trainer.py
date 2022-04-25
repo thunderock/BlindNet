@@ -37,7 +37,7 @@ class Trainer:
         # Training loop begin
         running_loss = 0
         model.train()
-        status_loop = tqdm(train_loader, total=len(train_loader), leave=True)
+        status_loop = tqdm(train_loader, total=len(train_loader), leave=False)
         for i, data in enumerate(status_loop):
             # Get the inputs
             inputs, labels, random_cat = data
@@ -77,7 +77,7 @@ class Trainer:
 
         running_loss = 0
 
-        for i, data in enumerate(tqdm(val_loader)):
+        for i, data in enumerate(tqdm(val_loader, leave=False)):
             images, labels, _ = data
             images, labels = images.to(self.device), labels.to(self.device)
             outputs = model(images)
