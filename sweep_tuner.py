@@ -165,8 +165,15 @@ def train_optuna(trial, data_dir="."):
 from botorch.settings import suppress_botorch_warnings, validate_input_scaling
 import optuna
 from optuna.integration.wandb import WeightsAndBiasesCallback
-wandb_kwargs = {"project": "blindnet"}
-wandbc = WeightsAndBiasesCallback(wandb_kwargs=wandb_kwargs)
+
+wandb_kwargs = {
+                "project": "blindnet",
+                "group": "summary",
+                "job_type": "logging",
+                "mode": "offline"
+                }
+
+wandbc = WeightsAndBiasesCallback(metric_name="val_loss", wandb_kwargs=wandb_kwargs)
 
 suppress_botorch_warnings(False)
 validate_input_scaling(True)
