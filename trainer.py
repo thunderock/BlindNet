@@ -94,9 +94,9 @@ class Trainer:
         val_split = int(len(img_idxs) * self.val_split)
         # print(val_split, self.val_split)
         trainset, validset = random_split(dataset, [len(img_idxs) - val_split, val_split])
-        trainloader = DataLoader(trainset, batch_size=self.batch_size, shuffle=True, num_workers=2)
+        trainloader = DataLoader(trainset, batch_size=self.batch_size, shuffle=True, num_workers=3)
         if val_split > 0:
-            validloader = DataLoader(validset, batch_size=self.batch_size, shuffle=True, num_workers=2)
+            validloader = DataLoader(validset, batch_size=self.batch_size, shuffle=True, num_workers=3)
 
 
         # for i, param in enumerate(model.parameters()):

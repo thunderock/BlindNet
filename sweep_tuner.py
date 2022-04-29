@@ -54,7 +54,7 @@ parameters_dict.update({
         'max': 0.01
       },
     'batch_size':
-        {"values": [16]}
+        {"values": [32]}
 
     })
 
@@ -127,8 +127,11 @@ class SweepTuner:
 
 def train_sweep(con=None):
     with wandb.init(config=con):
+        import string, random
+        letters = string.ascii_lowercase
+        name = ''.join(random.choice(letters) for i in range(10))
         con = wandb.config
-        print(con)
+        print(con, name)
 
         trainer = SweepTuner(image_size=32)
 
@@ -137,7 +140,9 @@ def train_sweep(con=None):
             learning_rate=con.learning_rate,
             batch_size=con.batch_size,
             optimizer=con.optimizer,
-            scheduler=con.scheduler
+            scheduler=con.scheduler,
+            data_dir='.',
+            name=name
             )
 
 
@@ -155,6 +160,7 @@ def _get_trial_values(trial):
 
 
 def train_optuna(trial, data_dir="."):
+
     model_params = _get_trial_values(trial)
     print(model_params)
     trainer = SweepTuner(image_size=32)
@@ -188,21 +194,21 @@ def plot_study(study, path=None):
             print("Error in plot: ", e)
 
 
-wandb_kwargs = {
-                "project": "blindnet",
-                "group": "summary",
-                "job_type": "logging",
-                "mode": "online"
-                }
-
-wandbc = WeightsAndBiasesCallback(metric_name="val_loss", wandb_kwargs=wandb_kwargs)
-
-suppress_botorch_warnings(False)
-validate_input_scaling(True)
-study_name = "blindnet_optuna"
-study_dir = "sqlite:///{}/{}.db".format("tune/", study_name)
-sampler = optuna.integration.BoTorchSampler()
-study = optuna.create_study(study_name=study_name, storage=study_dir, direction='minimize', sampler=sampler)
+# wandb_kwargs = {
+#                 "project": "blindnet",
+#                 "group": "summary",
+#                 "job_type": "logging",
+#                 "mode": "online"
+#                 }
+#
+# wandbc = WeightsAndBiasesCallback(metric_name="val_loss", wandb_kwargs=wandb_kwargs)
+#
+# suppress_botorch_warnings(False)
+# validate_input_scaling(True)
+# study_name = "blindnet_optuna"
+# study_dir = "sqlite:///{}/{}.db".format("tune/", study_name)
+# sampler = optuna.integration.BoTorchSampler()
+# study = optuna.create_study(study_name=study_name, storage=study_dir, direction='minimize', sampler=sampler)
 
 
 # To run, run these two lines
@@ -210,13 +216,15 @@ study = optuna.create_study(study_name=study_name, storage=study_dir, direction=
 #                show_progress_bar=False, callbacks=[wandbc])
 # plot_study(study)
 
-# sweep_id = wandb.sweep(sweep_config, project="sweeps_blindnet")
-# run = wandb.agent(sweep_id, train, count=20)
+sweep_id = wandb.sweep(sweep_config, project="sweeps_blindnet")
+run = wandb.agent(sweep_id, train_sweep, count=20)
 # trainner = SweepTuner(image_size=32)
 # trainner.train_and_evaluate(
 #     model="resnet18",
 #     learning_rate=1e-3,
 #     batch_size=16,
 #     optimizer="adam",
-#     scheduler="CosineAnnealingWarmRestarts"
+#     scheduler="CosineAnnealingWarmRestarts",
+#     name=""
+#     data_dir='.'
 # )
