@@ -19,6 +19,10 @@ from torch import optim
 from PIL import Image, ImageOps
 import wandb
 
+from botorch.settings import suppress_botorch_warnings, validate_input_scaling
+import optuna
+from optuna.integration.wandb import WeightsAndBiasesCallback
+
 
 sweep_config = {
     'method': 'bayes'
@@ -162,15 +166,33 @@ def train_optuna(trial, data_dir="."):
         scheduler=model_params['scheduler'],
         data_dir=data_dir, name=trial.number)
 
-from botorch.settings import suppress_botorch_warnings, validate_input_scaling
-import optuna
-from optuna.integration.wandb import WeightsAndBiasesCallback
+
+def plot_study(study, path=None):
+    plots = [optuna.visualization.matplotlib.plot_parallel_coordinate,
+            optuna.visualization.matplotlib.plot_contour,
+            optuna.visualization.matplotlib.plot_slice,
+            optuna.visualization.matplotlib.plot_param_importances,
+            optuna.visualization.matplotlib.plot_edf,
+            optuna.visualization.matplotlib.plot_optimization_history]
+    for plot in plots:
+        try:
+            _ = plot(study)
+            if path is None:
+                plt.show()
+            else:
+                p = os.path.join(path, plot.__name__ + '.png')
+                print("writing fig at ", str(p))
+
+                plt.savefig(p)
+        except Exception as e:
+            print("Error in plot: ", e)
+
 
 wandb_kwargs = {
                 "project": "blindnet",
                 "group": "summary",
                 "job_type": "logging",
-                "mode": "offline"
+                "mode": "online"
                 }
 
 wandbc = WeightsAndBiasesCallback(metric_name="val_loss", wandb_kwargs=wandb_kwargs)
@@ -181,8 +203,12 @@ study_name = "blindnet_optuna"
 study_dir = "sqlite:///{}/{}.db".format("tune/", study_name)
 sampler = optuna.integration.BoTorchSampler()
 study = optuna.create_study(study_name=study_name, storage=study_dir, direction='minimize', sampler=sampler)
-study.optimize(lambda trial: train_optuna(trial, data_dir='../input/coco-cat-id-masked-images/'), n_trials=10, n_jobs=3,
-               show_progress_bar=False, callbacks=[wandbc])
+
+
+# To run, run these two lines
+# study.optimize(lambda trial: train_optuna(trial, data_dir='../input/coco-cat-id-masked-images/'), n_trials=15, n_jobs=2,
+#                show_progress_bar=False, callbacks=[wandbc])
+# plot_study(study)
 
 # sweep_id = wandb.sweep(sweep_config, project="sweeps_blindnet")
 # run = wandb.agent(sweep_id, train, count=20)
