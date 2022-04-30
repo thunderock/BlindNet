@@ -19,11 +19,9 @@ from torch import optim
 from PIL import Image, ImageOps
 import wandb
 
-from botorch.settings import suppress_botorch_warnings, validate_input_scaling
-import optuna
-from optuna.integration.wandb import WeightsAndBiasesCallback
-
-
+# from botorch.settings import suppress_botorch_warnings, validate_input_scaling
+# import optuna
+# from optuna.integration.wandb import WeightsAndBiasesCallback
 sweep_config = {
     'method': 'bayes'
 }
@@ -216,7 +214,7 @@ def plot_study(study, path=None):
 #                show_progress_bar=False, callbacks=[wandbc])
 # plot_study(study)
 
-sweep_id = wandb.sweep(sweep_config, project="sweeps_blindnet")
+sweep_id = wandb.sweep(sweep_config, project="sweeps_blindnet_carbonate")
 run = wandb.agent(sweep_id, train_sweep, count=20)
 # trainner = SweepTuner(image_size=32)
 # trainner.train_and_evaluate(
