@@ -119,7 +119,7 @@ class Trainer:
                         print('Saving model..... Loss improved from %.3f to %.3f' % (best_val_loss, loss))
                         best_val_loss = loss
                         # torch.save(model.state_dict(), '{}.pt'.format(model_save_name))
-                        wandb.log({"validation_loss": loss, "epoch": epoch, "model_name": model_save_name})
+                    wandb.log({"validation_loss": loss, "epoch": epoch, "model_name": model_save_name})
             optimizer.step()
             scheduler.step(loss)
             # scheduler2.step(epoch + 1/self.epochs)
