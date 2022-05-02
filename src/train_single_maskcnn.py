@@ -85,7 +85,7 @@ def calc_scores(model, loader, loss_fn):
             total_pts += inp_img.shape[0]
             total_correct += (torch.argmax(masked_labels_pred, dim=-1) == cats).sum()
 
-            pred_idxs = torch.argsort(masked_labels_pred, dim=1)[cats]
+            pred_idxs = torch.gather(torch.argsort(masked_labels_pred, dim = 1), 1, cats.reshape(-1, 1)).view(-1)
 
             for i in range(pred_idxs.shape[0]):
                 score["pred_count"][pred_idxs[i].item()] += 1
@@ -158,7 +158,7 @@ if __name__ == '__main__':
         "bilinear": False,
         "init_channels": 4,
         "bbox": True,
-        "batch_size": 22,
+        "batch_size": 70,
         "epochs": 100,
         "lr": 1e-3,
         "log_dir": "logs/",
