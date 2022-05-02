@@ -7,6 +7,7 @@ __pycache__/
 *.so
 
 # Distribution / packaging
+saved_models/
 logs/
 .DS_Store
 datasets/

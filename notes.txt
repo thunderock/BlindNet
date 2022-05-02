@@ -1,0 +1,8 @@
+* Ignore datapoints with large portion on the image?
+* Transformations and augmentations.
+* Permutations on multiple masks
+* Transformation configurations.
+* partial crop
+
+* Sum all the categories on the hidden pixels and do softmax.
+* Compare with majority value????

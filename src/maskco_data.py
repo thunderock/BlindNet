@@ -1,18 +1,19 @@
 import cv2
 import torch
-from torch.utils.data import Dataset
+from torch.utils.data import Dataset, DataLoader
 from tqdm import tqdm
 import numpy as np
 
-from src.img_utils import get_transformation, create_img_meta_from_path, read_img, mask_img
+from src.img_utils import get_transformation, create_img_meta_from_path, read_img, mask_img, get_val_transformation
 
 class MaskCocoDataset(Dataset):
-    def __init__(self, annot_path, img_dir_path, config):
+    def __init__(self, annot_path, img_dir_path, config, train_dataset = True):
         self.img_annots, self.img_ids, self.categories = create_img_meta_from_path(annot_path)
         self.img_dir_path = img_dir_path
         self.config = config
-        self.src_transformation, self.target_transformation = get_transformation(config)
+        self.src_transformation, self.target_transformation = get_transformation(config) if train_dataset else get_val_transformation(config)
         self.total_categories = config["total_categories"]
+        self.score_mode = False
 
     def __len__(self):
         return len(self.img_ids)
@@ -35,9 +36,13 @@ class MaskCocoDataset(Dataset):
         tar_img = tar_augs["image"]
         tar_bboxes = torch.tensor(tar_augs["bboxes"]).long()
 
-        src_img, tar_masked_cls, masked_bbox = mask_img(src_img, src_bboxes, tar_img, tar_bboxes, img_meta["cats"], self.total_categories)
-        inp_img = torch.cat((src_img, masked_bbox), dim=0)
-        return inp_img, tar_masked_cls
+        src_img, tar_masked_cls, masked_bbox_channel, tar_masked_bbox, cat = mask_img(src_img, src_bboxes, tar_img, tar_bboxes, img_meta["cats"], self.total_categories)
+        inp_img = torch.cat((src_img, masked_bbox_channel), dim=0)
+
+        if not self.score_mode:
+            return inp_img, tar_masked_cls
+        else:
+            return inp_img, tar_masked_cls, tar_masked_bbox, torch.tensor([cat])
 
         # TODO: Augmentations
 
@@ -80,17 +85,26 @@ if __name__ == '__main__':
     config = {
         "annotation_path": "datasets/coco/annotations/instances_val2017.json",
         "img_dir_path": "datasets/coco/val2017/",
-        "inp_img_size": 500,
+        "inp_img_size": 384,
         "inp_img_scale": 1.1,
-        "target_img_size": 500,
+        "target_img_size": 384,
         "total_categories": 91
     }
-    dataset = MaskCocoDataset(config["annotation_path"], config["img_dir_path"], config)
+    dataset = MaskCocoDataset(config["annotation_path"], config["img_dir_path"], config, train_dataset=False)
+    dataset.score_mode = True
+    loader = DataLoader(dataset = dataset, batch_size = 2, shuffle = False)
 
     print(len(dataset))
-    for i in tqdm(range(0, len(dataset))):
-        print(i)
-        inp_img, tar_cls = dataset.__getitem__(i)
-        # plot_examples([inp_img.permute(1,2,0)[...,:3].numpy()])
+    num_iter = 0
+    for inp_img, tar_cls, bbox, cats in tqdm(loader):
+        num_iter += 1
+        print(num_iter)
+        assert inp_img.shape[-1] == config["inp_img_size"]
+        assert inp_img.shape[-2] == config["inp_img_size"]
+        assert tar_cls.shape[-1] == config["inp_img_size"]
+        assert tar_cls.shape[-2] == config["inp_img_size"]
+
+        # if (i+1)%100 == 0:
+        #     plot_examples([inp_img.permute(1,2,0)[...,:3].numpy()])
 
     print("Done")

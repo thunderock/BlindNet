@@ -2,6 +2,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+# Model used from: https://github.com/milesial/Pytorch-UNet/tree/master/unet
+
 class DoubleConv(nn.Module):
     """(convolution => [BN] => ReLU) * 2"""
 

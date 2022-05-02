@@ -1,6 +1,7 @@
 import torch
 from torch import nn
 
+from src.model.single_mask_model import SingleMaskCnn
 from src.model.unet_model import UNet
 
 
@@ -24,7 +25,15 @@ def test_unet_model():
     Y = model(X)
     print(Y.shape)
 
+def test_single_mask_model():
+    model = SingleMaskCnn(4, 91)
+    X = torch.rand(1, 4, 384, 384)
+    Y = model(X)
+    print(Y.shape)
+
 
 if __name__ == '__main__':
     # test_upsample()
-    test_unet_model()
+    # test_unet_model()
+    test_single_mask_model()
+

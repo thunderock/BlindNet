@@ -2,22 +2,25 @@ import os
 import traceback
 
 import torch
-from torch.nn import BCEWithLogitsLoss
+from torch.nn import BCEWithLogitsLoss, CrossEntropyLoss
 from torch.optim import Adam
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
 from src.maskco_data import MaskCocoDataset
+from src.model.single_mask_model import SingleMaskCnn
 from src.model.unet_model import UNet
 import logging
+
+from src.single_maskco_data import SingleMaskCocoDataset
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 
 def get_bbox_dataloader(annoation_path, img_dir_path, config, train = True):
-    dataset = MaskCocoDataset(annoation_path, img_dir_path, config, train_dataset= train)
-    dataloader = DataLoader(dataset=dataset, num_workers=4, shuffle=train, batch_size=config["batch_size"])
-    # dataloader = DataLoader(dataset=dataset, shuffle=train, batch_size=config["batch_size"])
+    dataset = SingleMaskCocoDataset(annoation_path, img_dir_path, config, train_dataset= train)
+    # dataloader = DataLoader(dataset=dataset, num_workers=4, shuffle=train, batch_size=config["batch_size"])
+    dataloader = DataLoader(dataset=dataset, shuffle=train, batch_size=config["batch_size"])
     return dataloader
 
 def get_bbox_train_val_loaders(config):
@@ -60,40 +63,36 @@ def calc_val_loss(model, loss_fn, loader):
     return total_loss
 
 def calc_scores(model, loader, loss_fn):
-    scores = { "total": 0,"pred_idx_mask": [0 for i in range(91)], "pred_idx": [0 for i in range(91)] }
-
     logging.info("Calculating scores.")
     model.eval()
-    loader.dataset.score_mode = True
     total_loss = 0
+    total_correct = 0
+    total_pts = 0
 
     with torch.no_grad():
-        for inp_img, masked_labels, bboxes, cats in loader:
+        for inp_img, cats in loader:
             inp_img = inp_img.to(device)
-            masked_labels = masked_labels.to(device)
+            cats = cats.to(device)
+            inp_img = inp_img[cats!=-1]
+            cats = cats[cats!=-1]
             masked_labels_pred = model(inp_img)
-            loss = loss_fn(masked_labels_pred, masked_labels)
+            loss = loss_fn(masked_labels_pred, cats)
             total_loss += loss.item()
 
-            for i in range(inp_img.shape[0]):
-                if cats[i].item() == -1:
-                    continue
-                scores["total"] += 1
-                box_cls_pred = masked_labels_pred[i][:, bboxes[i][0]: bboxes[i][0]+bboxes[i][2], bboxes[i][1]: bboxes[i][0]+bboxes[i][3]].sum(1).sum(1)
-                scores["pred_idx_mask"][torch.argsort(box_cls_pred)[cats[i].item()].item()] += 1
+            total_pts += inp_img.shape[0]
+            total_correct += (torch.argmax(masked_labels_pred, dim=-1) == cats).sum()
 
-    loader.dataset.score_mode = False
-    return scores, total_loss
+    return total_correct / (total_pts+1e-3), total_loss
 
 def train_model(config):
-    model = UNet(config["init_channels"], config["total_categories"], config["bilinear"])
+    model = SingleMaskCnn(config["init_channels"], config["total_categories"])
     model.to(device)
 
     if config["load_model"]:
         load_model(model, config["model_path"])
 
     train_loader, val_loader = get_bbox_train_val_loaders(config)
-    loss_fn = BCEWithLogitsLoss()
+    loss_fn = CrossEntropyLoss()
     optimizer = Adam(params=model.parameters(), lr=config["lr"])
 
     epoch_loss = {"train": [], "val": []}
@@ -102,13 +101,15 @@ def train_model(config):
         train_loss = 0
         model.train()
 
-        for batch_idx, (input_img, masked_labels) in tqdm(enumerate(train_loader)):
+        for batch_idx, (input_img, cats) in tqdm(enumerate(train_loader)):
             input_img = input_img.to(device)
-            masked_labels = masked_labels.to(device)
+            cats = cats.to(device)
+            input_img = input_img[cats != -1]
+            cats = cats[cats != -1]
 
             masked_labels_pred = model(input_img)
 
-            loss = loss_fn(masked_labels_pred, masked_labels)
+            loss = loss_fn(masked_labels_pred, cats)
             loss = loss / config["grad_acc"]
             loss.backward()
 
@@ -119,10 +120,10 @@ def train_model(config):
             train_loss += loss.item()
 
         epoch_loss["train"].append(train_loss / len(train_loader))
-        scores, val_loss = calc_scores(model, val_loader, loss_fn)
+        val_accuracy, val_loss = calc_scores(model, val_loader, loss_fn)
         epoch_loss["val"].append(val_loss / len(val_loader))
 
-        logging.info(f"Scores: {scores}")
+        logging.info(f"accuracy: {val_accuracy}")
         logging.info(f"train_loss: {train_loss}, val_loss: {val_loss}")
 
         if epochs == 0 or val_loss == min(epoch_loss["val"]):
@@ -142,20 +143,20 @@ if __name__ == '__main__':
         "total_categories": 91,
         "train_model": True,
         "save_model": True,
-        "load_model": False,
+        "load_model": True,
         "model_path": "saved_models/",
-        "model_type": "unet",
+        "model_type": "maskcnn",
         "bilinear": False,
         "init_channels": 4,
         "bbox": True,
-        "batch_size": 20,
+        "batch_size": 2,
         "epochs": 100,
         "lr": 1e-3,
         "log_dir": "logs/",
         "grad_acc": 4
     }
 
-    model_path = f"unet_{config['model_type']}_{'bilinear' if config['bilinear'] else 'transpose'}_{'bbox' if config['bbox'] else '$$'}_{config['inp_img_size']}_{config['batch_size']}.model"
+    model_path = f"cnn_{config['model_type']}_{'bbox' if config['bbox'] else '$$'}_{config['inp_img_size']}_{config['batch_size']}.model"
     config["model_path"] += model_path
 
     log_file_name = f"{config['log_dir']}{model_path}.txt"

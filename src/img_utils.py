@@ -50,7 +50,7 @@ def mask_img(src_img, src_bboxes, tar_img, tar_bboxes, cats, total_categories = 
     tar_masked_cls = torch.zeros(total_categories, tar_img.shape[1], tar_img.shape[1])
     masked_bbox = torch.zeros(1, src_img.shape[1], src_img.shape[1])
     if src_bboxes.shape[0]==0:
-        return src_img, tar_masked_cls, masked_bbox
+        return src_img, tar_masked_cls, masked_bbox, torch.zeros(4).long(), -1, torch.zeros(4).long(), -1
 
     masked_idx = random.randrange(src_bboxes.shape[0])
 
@@ -60,7 +60,7 @@ def mask_img(src_img, src_bboxes, tar_img, tar_bboxes, cats, total_categories = 
     for cls, bbox in zip(cats, tar_bboxes):
         tar_masked_cls[cls, bbox[0]:bbox[0]+bbox[2], bbox[1]:bbox[1]+bbox[3]] = 1
 
-    return src_img, tar_masked_cls, masked_bbox
+    return src_img, tar_masked_cls, masked_bbox, tar_masked_box, cats[masked_idx], 
 
 def read_img(idx, img_ids, img_annots, img_dir_path):
     annot_id = img_ids[idx]
@@ -83,6 +83,23 @@ def visualize_bbox(img, bboxes, class_name, color=(255, 0, 0), thickness=5):
         img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
         cv2.rectangle(img, (x_min, y_min), (x_min + width, y_min + height), color, thickness)
     return img
+
+def get_val_transformation(config):
+    transes = []
+    IMG_SIZE = config["inp_img_size"]  # W = H
+    transes.append(A.LongestMaxSize(max_size=int(IMG_SIZE)))
+    transes.append(A.PadIfNeeded(min_height=int(IMG_SIZE), min_width=int(IMG_SIZE)))
+    transes.append(A.Normalize(mean=[0, 0, 0], std=[1, 1, 1], max_pixel_value=255, ))
+    transes.append(ToTensorV2())
+
+    # Apply this transformation to get the bboxes for the target image
+    inp_tar_transformations = []
+    TARGET_SIZE = config["target_img_size"]
+    inp_tar_transformations.append(A.Resize(height=TARGET_SIZE, width=TARGET_SIZE))
+    inp_tar_transformations.append(ToTensorV2())
+
+    return A.Compose(transes, bbox_params=A.BboxParams(format="coco", label_fields=[]), ), A.Compose(
+        inp_tar_transformations, bbox_params=A.BboxParams(format="coco", label_fields=[]))
 
 def get_transformation(config):
     transes = []
