@@ -19,8 +19,8 @@ device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 def get_bbox_dataloader(annoation_path, img_dir_path, config, train = True):
     dataset = SingleMaskCocoDataset(annoation_path, img_dir_path, config, train_dataset= train)
-    # dataloader = DataLoader(dataset=dataset, num_workers=4, shuffle=train, batch_size=config["batch_size"])
-    dataloader = DataLoader(dataset=dataset, shuffle=train, batch_size=config["batch_size"])
+    dataloader = DataLoader(dataset=dataset, num_workers=4, shuffle=train, batch_size=config["batch_size"])
+    # dataloader = DataLoader(dataset=dataset, shuffle=train, batch_size=config["batch_size"])
     return dataloader
 
 def get_bbox_train_val_loaders(config):
@@ -63,6 +63,9 @@ def calc_val_loss(model, loss_fn, loader):
     return total_loss
 
 def calc_scores(model, loader, loss_fn):
+
+    score = {"total": 0, "pred_count": [0 for i in range(91)]}
+
     logging.info("Calculating scores.")
     model.eval()
     total_loss = 0
@@ -82,7 +85,12 @@ def calc_scores(model, loader, loss_fn):
             total_pts += inp_img.shape[0]
             total_correct += (torch.argmax(masked_labels_pred, dim=-1) == cats).sum()
 
-    return total_correct / (total_pts+1e-3), total_loss
+            pred_idxs = torch.argsort(masked_labels_pred, dim=1)[cats]
+
+            for i in range(pred_idxs.shape[0]):
+                score["pred_count"][pred_idxs[i].item()] += 1
+
+    return total_correct / (total_pts+1e-3), total_loss, score
 
 def train_model(config):
     model = SingleMaskCnn(config["init_channels"], config["total_categories"])
@@ -120,10 +128,11 @@ def train_model(config):
             train_loss += loss.item()
 
         epoch_loss["train"].append(train_loss / len(train_loader))
-        val_accuracy, val_loss = calc_scores(model, val_loader, loss_fn)
+        val_accuracy, val_loss, score = calc_scores(model, val_loader, loss_fn)
         epoch_loss["val"].append(val_loss / len(val_loader))
 
         logging.info(f"accuracy: {val_accuracy}")
+        logging.info(f"Score: {score}")
         logging.info(f"train_loss: {train_loss}, val_loss: {val_loss}")
 
         if epochs == 0 or val_loss == min(epoch_loss["val"]):
@@ -149,7 +158,7 @@ if __name__ == '__main__':
         "bilinear": False,
         "init_channels": 4,
         "bbox": True,
-        "batch_size": 2,
+        "batch_size": 22,
         "epochs": 100,
         "lr": 1e-3,
         "log_dir": "logs/",
