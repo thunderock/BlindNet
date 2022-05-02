@@ -41,7 +41,7 @@ class BlindNetFFT(nn.Module):
             nn.ReLU(),
             nn.Flatten()
         )
-        self.linear = nn.Sequential(nn.Linear(768, self.image_size* self.image_size* 91), nn.ReLU(), )
+        self.linear = nn.Sequential(nn.Linear(12288, 1024), nn.ReLU(), nn.Linear(1024, 91), nn.Sigmoid(), )
 
     def forward(self, input):
         batch_size = input.size(0)
@@ -50,12 +50,13 @@ class BlindNetFFT(nn.Module):
         midlevel_features = self.midlevel_resnet(input)
         output = self.upsample(midlevel_features)
         # print(output.size())
-        output = self.linear(output)
+        # print(output.size())
+        x = self.linear(output)
         # print(output.size())
         # x = F.log_softmax(output.view(batch_size, 91, self.image_size, self.image_size), dim=1)
         # print(x[0, :, 0, 0])
         # output should be batch_size * (256 * 256) * 91 *
-        x = output.view(batch_size * self.image_size * self.image_size, 91)
+        # x = output.view(batch_size * self.image_size * self.image_size, 91)
         return x
         # x = torch.max(x, dim=1)[1]
         # print(x)

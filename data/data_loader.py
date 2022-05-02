@@ -9,6 +9,7 @@ import os
 import torch
 from torch.utils.data import Dataset, DataLoader
 import torchvision.transforms as T
+from torch.nn import functional as F
 from torchvision.transforms import functional as TF
 from pycocotools.coco import COCO
 from matplotlib.patches import Polygon
@@ -134,6 +135,9 @@ class CocoDataset(Dataset):
         # y_hat = torch.clone(y)
         # y[y == random_cat] = -1
         # X is the image, y is the mask, random_cat is a random cat id in the mask
+        distinct_cats = F.one_hot(distinct_cats.long(), num_classes=91)
+        y = distinct_cats.sum(dim=0).float()
+        # print(y)
         return X, y, random_cat
 
 
@@ -157,17 +161,16 @@ class CocoDataset(Dataset):
 #
 # ds = CocoDataset(annotations='../coco2017/annotations/instances_train2017.json', image_root_dir='../coco2017', mask_root_dir='../cat_id_masked_arrays', train=True)
 #
-# trainloader = DataLoader(ds, batch_size=8, shuffle=False, num_workers=4)
+# trainloader = DataLoader(ds, batch_size=1, shuffle=False, num_workers=1)
 #
 # status_loop = tqdm(trainloader, total=len(trainloader), leave=True)
 #
 # i = 0
 # for x in status_loop:
-#     # print(len(x), x[0].shape, x[1].shape)
-#     # if i == 3:
-#     #     break
-#     # i += 1
-#     pass
+#     print(len(x), x[0].shape, x[1].shape)
+#     if i == 3:
+#         break
+#     i += 1
 #
 #
 #

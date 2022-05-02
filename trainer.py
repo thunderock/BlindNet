@@ -41,7 +41,7 @@ class Trainer:
         status_loop = tqdm(train_loader, total=len(train_loader), leave=False)
         for i, data in enumerate(status_loop):
             # Get the inputs
-            inputs, labels, random_cat = data
+            inputs, labels, _ = data
             # print(torch.unique(labels))
             # Move them to the correct device
             inputs, labels = inputs.to(self.device), labels.to(self.device)
@@ -50,13 +50,14 @@ class Trainer:
             # Forward pass
             outputs = model(inputs)
 
-            labels = labels.reshape(-1)
+            # labels = labels.reshape(-1)
             # print(outputs[1050, :])
             # outputs = torch.max(outputs, dim=1)[1]
             # assert torch.sum(labels, axis=1).sum() == 1
             # print(outputs.shape, outputs.shape, random_cat)
             # Compute the loss
-            loss = criterion(outputs, labels.to(torch.long))
+            # print(outputs.shape, labels.shape)
+            loss = criterion(outputs, labels)
             # Backward pass
             loss.backward()
             # Update the parameters
@@ -82,7 +83,7 @@ class Trainer:
             images, labels, _ = data
             images, labels = images.to(self.device), labels.to(self.device)
             outputs = model(images)
-            running_loss += criterion(outputs, labels.reshape(-1).to(torch.long))
+            running_loss += criterion(outputs, labels)
         avg_loss = running_loss / len(val_loader)
         print('Validation Loss: %.3f' % avg_loss)
         return avg_loss
@@ -95,15 +96,15 @@ class Trainer:
         val_split = int(len(img_idxs) * self.val_split)
         # print(val_split, self.val_split)
         trainset, validset = random_split(dataset, [len(img_idxs) - val_split, val_split])
-        trainloader = DataLoader(trainset, batch_size=self.batch_size, shuffle=True, num_workers=3)
+        trainloader = DataLoader(trainset, batch_size=self.batch_size, shuffle=True, num_workers=6)
         if val_split > 0:
-            validloader = DataLoader(validset, batch_size=self.batch_size, shuffle=True, num_workers=3)
+            validloader = DataLoader(validset, batch_size=self.batch_size, shuffle=True, num_workers=6)
 
 
         # for i, param in enumerate(model.parameters()):
         #     if i < 10:
         #         param.requires_grad = False
-        criterion = nn.CrossEntropyLoss()
+        criterion = nn.BCEWithLogitsLoss()
         # optimizer = optim.Adam(model.parameters(), lr=self.learning_rate)
 
         # scheduler1 = optim.lr_scheduler.ReduceLROnPlateau(optimizer, patience=3, verbose=True)

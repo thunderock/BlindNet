@@ -18,6 +18,8 @@ from tqdm import tqdm
 from torch import optim
 from PIL import Image, ImageOps
 import wandb
+import warnings
+warnings.filterwarnings("ignore")
 
 # from botorch.settings import suppress_botorch_warnings, validate_input_scaling
 # import optuna
@@ -29,7 +31,7 @@ sweep_config = {
 
 parameters_dict = {
     'optimizer': {
-        'values': ['adam' ,'sgd']
+        'values': ['adam']
         },
     'scheduler':{
         'values': ['CosineAnnealingLR', 'ReduceLROnPlateau']
@@ -52,7 +54,7 @@ parameters_dict.update({
         'max': 0.01
       },
     'batch_size':
-        {"values": [32]}
+        {"values": [128]}
 
     })
 
@@ -131,7 +133,7 @@ def train_sweep(con=None):
         con = wandb.config
         print(con, name)
 
-        trainer = SweepTuner(image_size=32)
+        trainer = SweepTuner(image_size=128)
 
         trainer.train_and_evaluate(
             model=con.model,
@@ -214,15 +216,15 @@ def plot_study(study, path=None):
 #                show_progress_bar=False, callbacks=[wandbc])
 # plot_study(study)
 
-sweep_id = wandb.sweep(sweep_config, project="sweeps_blindnet_carbonate")
-run = wandb.agent(sweep_id, train_sweep, count=20)
-# trainner = SweepTuner(image_size=32)
+sweep_id = wandb.sweep(sweep_config, project="sweeps_blindnet_multilabel_carbonate")
+run = wandb.agent(sweep_id, train_sweep, count=8)
+# trainner = SweepTuner(image_size=128)
 # trainner.train_and_evaluate(
 #     model="resnet18",
 #     learning_rate=1e-3,
-#     batch_size=16,
+#     batch_size=128,
 #     optimizer="adam",
-#     scheduler="CosineAnnealingWarmRestarts",
-#     name=""
+#     scheduler="ReduceLROnPlateau",
+#     name="temp",
 #     data_dir='.'
 # )
