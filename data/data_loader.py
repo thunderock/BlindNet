@@ -24,7 +24,7 @@ class CocoDataset(Dataset):
         return os.path.join(root_dir, dir, '{}.jpg'.format(x))
 
 
-    def __init__(self, annotations, image_root_dir, mask_root_dir, train, image_size=84):
+    def __init__(self, annotations, image_root_dir, mask_root_dir, train, image_size=84, predict=False):
         super().__init__()
         self.coco = COCO(annotations)
         self.img_ids = self.coco.getImgIds()
@@ -32,11 +32,12 @@ class CocoDataset(Dataset):
         self.image_root_dir = image_root_dir
         self.dir = 'train2017' if train else 'val2017'
         self.resize = T.Resize(size=(image_size, image_size))
-        self.transform = T.Compose([T.ToTensor(),
+        self.transform = T.Compose([T.ToTensor()]) if predict else T.Compose([T.ToTensor(),
             T.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
         self.target_transform = T.Compose([T.ToTensor()])
         self.train = train
         self.image_size = image_size
+        self.predict = predict
 
     def write_masked_array(self, img_id):
         transformed_file = '../coco2017/cat_id_masked_arrays/{}/{}.npy'.format(self.dir, img_id)
@@ -134,6 +135,8 @@ class CocoDataset(Dataset):
         # y_hat = torch.clone(y)
         # y[y == random_cat] = -1
         # X is the image, y is the mask, random_cat is a random cat id in the mask
+        if self.predict:
+            return X, y, random_cat, img_path
         return X, y, random_cat
 
 

@@ -107,7 +107,7 @@ class SweepTuner:
         if method == 'CosineAnnealingWarmRestarts':
             return CosineAnnealingWarmRestarts(optimizer, T_0=Config.T_0, T_mult=1, eta_min=Config.min_lr, last_epoch=-1)
         if method == 'ReduceLROnPlateau':
-            return ReduceLROnPlateau(optimizer, patience=3, verbose=False)
+            return ReduceLROnPlateau(optimizer, patience=5, verbose=False)
         else:
             raise ValueError('Unknown scheduler method')
 
@@ -214,15 +214,15 @@ def plot_study(study, path=None):
 #                show_progress_bar=False, callbacks=[wandbc])
 # plot_study(study)
 
-sweep_id = wandb.sweep(sweep_config, project="sweeps_blindnet_carbonate")
-run = wandb.agent(sweep_id, train_sweep, count=20)
-# trainner = SweepTuner(image_size=32)
-# trainner.train_and_evaluate(
-#     model="resnet18",
-#     learning_rate=1e-3,
-#     batch_size=16,
-#     optimizer="adam",
-#     scheduler="CosineAnnealingWarmRestarts",
-#     name=""
-#     data_dir='.'
-# )
+# sweep_id = wandb.sweep(sweep_config, project="sweeps_blindnet_carbonate")
+# run = wandb.agent(sweep_id, train_sweep, count=20)
+trainner = SweepTuner(image_size=64)
+trainner.train_and_evaluate(
+    model="resnet18",
+    learning_rate=0.006197,
+    batch_size=32,
+    optimizer="adam",
+    scheduler="ReduceLROnPlateau",
+    name="temp",
+    data_dir='.'
+)

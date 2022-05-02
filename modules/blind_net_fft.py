@@ -41,7 +41,7 @@ class BlindNetFFT(nn.Module):
             nn.ReLU(),
             nn.Flatten()
         )
-        self.linear = nn.Sequential(nn.Linear(768, self.image_size* self.image_size* 91), nn.ReLU(), )
+        self.linear = nn.Sequential(nn.Linear(3072, 1024), nn.ReLU(), nn.Linear(1024, self.image_size * self.image_size * 91), nn.ReLU(), )
 
     def forward(self, input):
         batch_size = input.size(0)
