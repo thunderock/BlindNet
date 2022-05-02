@@ -50,7 +50,7 @@ def mask_img(src_img, src_bboxes, tar_img, tar_bboxes, cats, total_categories = 
     tar_masked_cls = torch.zeros(total_categories, tar_img.shape[1], tar_img.shape[1])
     masked_bbox = torch.zeros(1, src_img.shape[1], src_img.shape[1])
     if src_bboxes.shape[0]==0:
-        return src_img, tar_masked_cls, masked_bbox, torch.zeros(4).long(), -1, torch.zeros(4).long(), -1
+        return src_img, tar_masked_cls, masked_bbox, torch.zeros(4).long(), -1
 
     masked_idx = random.randrange(src_bboxes.shape[0])
 
@@ -60,7 +60,7 @@ def mask_img(src_img, src_bboxes, tar_img, tar_bboxes, cats, total_categories = 
     for cls, bbox in zip(cats, tar_bboxes):
         tar_masked_cls[cls, bbox[0]:bbox[0]+bbox[2], bbox[1]:bbox[1]+bbox[3]] = 1
 
-    return src_img, tar_masked_cls, masked_bbox, tar_masked_box, cats[masked_idx], 
+    return src_img, tar_masked_cls, masked_bbox, tar_masked_box, cats[masked_idx]
 
 def read_img(idx, img_ids, img_annots, img_dir_path):
     annot_id = img_ids[idx]
@@ -88,7 +88,7 @@ def get_val_transformation(config):
     transes = []
     IMG_SIZE = config["inp_img_size"]  # W = H
     transes.append(A.LongestMaxSize(max_size=int(IMG_SIZE)))
-    transes.append(A.PadIfNeeded(min_height=int(IMG_SIZE), min_width=int(IMG_SIZE)))
+    transes.append(A.PadIfNeeded(min_height=int(IMG_SIZE), min_width=int(IMG_SIZE), border_mode=0, value=(0,0,0)))
     transes.append(A.Normalize(mean=[0, 0, 0], std=[1, 1, 1], max_pixel_value=255, ))
     transes.append(ToTensorV2())
 
@@ -106,7 +106,7 @@ def get_transformation(config):
     IMG_SIZE = config["inp_img_size"] # W = H
     scale = config["inp_img_scale"]
     transes.append(A.LongestMaxSize(max_size=int(IMG_SIZE*scale)))
-    transes.append(A.PadIfNeeded(min_height=int(IMG_SIZE * scale), min_width=int(IMG_SIZE * scale)))
+    transes.append(A.PadIfNeeded(min_height=int(IMG_SIZE * scale), min_width=int(IMG_SIZE * scale), border_mode=0, value=(0,0,0)))
     transes.append(A.RandomCrop(width=IMG_SIZE, height=IMG_SIZE))
     transes.append(A.OneOf([
             A.ShiftScaleRotate(rotate_limit=10, p=0.2, border_mode=cv2.BORDER_CONSTANT),

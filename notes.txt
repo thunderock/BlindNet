@@ -6,3 +6,4 @@
 
 * Sum all the categories on the hidden pixels and do softmax.
 * Compare with majority value????
+* WEIGHTED LOSS??
