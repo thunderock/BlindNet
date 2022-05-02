@@ -18,6 +18,18 @@ class MaskCocoDataset(Dataset):
     def __len__(self):
         return len(self.img_ids)
 
+    def get_image_by_id(self, img_id):
+        for i in range(len(self.img_ids)):
+            if str(self.img_ids[i]) == str(img_id):
+                annot_id = self.img_ids[i]
+                saved_boxes = self.img_annots[annot_id]["bboxes"]
+                self.img_annots[annot_id]["bboxes"] = torch.tensor([])
+                img, cls =  self.__getitem__(i)
+                self.img_annots[annot_id]["bboxes"] = saved_boxes
+                return img, cls, self.categories
+
+        raise NotImplementedError("ITEM ID NOT FOUND")
+
     def __getitem__(self, item):
         img, img_meta = read_img(item, self.img_ids, self.img_annots, self.img_dir_path)
         bboxes = img_meta["bboxes"]

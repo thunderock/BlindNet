@@ -6,7 +6,7 @@ from torch.nn import BCEWithLogitsLoss
 from torch.optim import Adam
 from torch.utils.data import DataLoader
 from tqdm import tqdm
-
+from matplotlib import pyplot as plt
 from src.maskco_data import MaskCocoDataset
 from src.model.unet_model import UNet
 import logging
@@ -84,6 +84,45 @@ def calc_scores(model, loader, loss_fn):
 
     loader.dataset.score_mode = False
     return scores, total_loss
+
+def perform_inference(config):
+    model = UNet(config["init_channels"], config["total_categories"], config["bilinear"])
+    model.to(device)
+
+    if config["load_model"]:
+        load_model(model, config["model_path"])
+
+    dataset = MaskCocoDataset(config["val_annotation_path"], config["val_img_dir_path"], config, train_dataset= False)
+
+    categories = dataset.categories
+    category_names = {cat["id"]: cat["name"] for cat in categories}
+    model.train()
+    run_simul = True
+
+    while run_simul:
+        img_id = 37988
+        # plot_img(config, img_id)
+        img, cls, categories = dataset.get_image_by_id(img_id)
+        plt.imshow(img.permute(1,2,0)[..., :3].numpy())
+        plt.show()
+        bbox = [80, 100, 200, 220]
+        img[:3, bbox[0]:bbox[1], bbox[2]: bbox[3]] = 0
+        img[3, bbox[0]:bbox[1], bbox[2]: bbox[3]] = 1
+
+        plt.imshow(img.permute(1,2,0)[..., :3].numpy())
+        plt.show()
+
+        plt.imshow(img[3].numpy())
+        plt.show()
+
+        img = img.to(device)
+        cls_pred = model(img.unsqueeze(0))
+        cls_pred_sort = torch.argsort(cls_pred[:,:, bbox[0]:bbox[1], bbox[2]:bbox[3]].sum(-1).sum(-1).view(-1))
+        top10cats = []
+        for i in range(10):
+            if cls_pred_sort[i].item() in category_names:
+                top10cats.append(category_names[cls_pred_sort[i].item()])
+        print(top10cats)
 
 def train_model(config):
     model = UNet(config["init_channels"], config["total_categories"], config["bilinear"])
@@ -163,4 +202,5 @@ if __name__ == '__main__':
     os.makedirs(os.path.dirname(log_file_name), exist_ok=True)
     logging.basicConfig(filename=log_file_name, filemode="a", format='%(asctime)s %(levelname)s %(message)s',datefmt='%H:%M:%S', level=logging.DEBUG)
     logging.info("Training begun")
-    train_model(config)
+    # train_model(config)
+    perform_inference(config)
