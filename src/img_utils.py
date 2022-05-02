@@ -43,7 +43,7 @@ def create_img_meta_from_path(annot_path):
 
 def mask_img_with_bbox(img, bbox, fill_value = 0):
     bbox = bbox.long()
-    img[:, bbox[0]:bbox[0]+bbox[2], bbox[1]:bbox[1]+bbox[3]] = fill_value
+    img[:, bbox[1]:bbox[1]+bbox[3], bbox[0]:bbox[0]+bbox[2]] = fill_value
     return img
 
 def mask_img(src_img, src_bboxes, tar_img, tar_bboxes, cats, total_categories = 80):
@@ -58,7 +58,7 @@ def mask_img(src_img, src_bboxes, tar_img, tar_bboxes, cats, total_categories = 
     src_img = mask_img_with_bbox(src_img, src_masked_box, fill_value=0)
     masked_bbox = mask_img_with_bbox(masked_bbox, tar_masked_box, fill_value=1)
     for cls, bbox in zip(cats, tar_bboxes):
-        tar_masked_cls[cls, bbox[0]:bbox[0]+bbox[2], bbox[1]:bbox[1]+bbox[3]] = 1
+        tar_masked_cls[cls, bbox[1]:bbox[1]+bbox[3], bbox[0]:bbox[0]+bbox[2]] = 1
 
     return src_img, tar_masked_cls, masked_bbox, tar_masked_box, cats[masked_idx]
 

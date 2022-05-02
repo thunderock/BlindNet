@@ -21,14 +21,16 @@ class SingleMaskCocoDataset(Dataset):
     def __len__(self):
         return len(self.img_ids)
 
-    def get_image_by_id(self, img_id):
+    def get_image_by_id(self, img_id, masked = False):
         for i in range(len(self.img_ids)):
             if str(self.img_ids[i]) == str(img_id):
                 annot_id = self.img_ids[i]
                 saved_boxes = self.img_annots[annot_id]["bboxes"]
-                self.img_annots[annot_id]["bboxes"] = torch.tensor([])
+                if not masked:
+                    self.img_annots[annot_id]["bboxes"] = torch.tensor([])
                 img, cls =  self.__getitem__(i)
-                self.img_annots[annot_id]["bboxes"] = saved_boxes
+                if not masked:
+                    self.img_annots[annot_id]["bboxes"] = saved_boxes
                 return img, cls, self.categories
 
         raise NotImplementedError("ITEM ID NOT FOUND")
@@ -54,7 +56,8 @@ class SingleMaskCocoDataset(Dataset):
         src_bbox = src_bboxes[masked_idx]
         masked_channel = torch.zeros(1, *src_img.shape[-2:])
         masked_channel[:, src_bbox[0]:src_bbox[0]+src_bbox[2], src_bbox[1]: src_bbox[1]+src_bbox[3]] = 1
-        src_img[:, src_bbox[0]:src_bbox[0]+src_bbox[2], src_bbox[1]: src_bbox[1]+src_bbox[3]] = 0
+        # src_img[:, src_bbox[0]:src_bbox[0]+src_bbox[2], src_bbox[1]: src_bbox[1]+src_bbox[3]] = 0
+        src_img[:, src_bbox[1]: src_bbox[1] + src_bbox[3], src_bbox[0]:src_bbox[0] + src_bbox[2]] = 0
         return torch.cat((src_img, masked_channel), dim=0), torch.tensor(img_meta["cats"][masked_idx])
 
         # src_img, tar_masked_cls, masked_bbox_channel, tar_masked_bbox, cat = mask_img(src_img, src_bboxes, tar_img, tar_bboxes, img_meta["cats"], self.total_categories)

@@ -41,7 +41,7 @@ def load_model(model, model_path):
         if not os.path.exists(model_path):
             return model
 
-        model.load_state_dict(torch.load(model_path))
+        model.load_state_dict(torch.load(model_path, map_location=device))
         return model
     except Exception as e:
         traceback.print_exc(e)
@@ -181,13 +181,13 @@ if __name__ == '__main__':
         "total_categories": 91,
         "train_model": True,
         "save_model": True,
-        "load_model": False,
+        "load_model": True,
         "model_path": "saved_models/",
         "model_type": "unet",
         "bilinear": False,
         "init_channels": 4,
         "bbox": True,
-        "batch_size": 20,
+        "batch_size": 22,
         "epochs": 100,
         "lr": 1e-3,
         "log_dir": "logs/",
@@ -202,5 +202,5 @@ if __name__ == '__main__':
     os.makedirs(os.path.dirname(log_file_name), exist_ok=True)
     logging.basicConfig(filename=log_file_name, filemode="a", format='%(asctime)s %(levelname)s %(message)s',datefmt='%H:%M:%S', level=logging.DEBUG)
     logging.info("Training begun")
-    # train_model(config)
-    perform_inference(config)
+    train_model(config)
+    # perform_inference(config)
