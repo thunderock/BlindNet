@@ -14,4 +14,4 @@
 
 conda deactivate
 module load deeplearning/2.8.0
-srun python driver.py
+srun python driver.py & python driver_multilabel.py
