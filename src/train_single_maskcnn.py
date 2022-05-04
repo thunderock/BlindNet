@@ -186,7 +186,7 @@ def train_model(config):
 
         logging.info(f"accuracy: {val_accuracy}")
         logging.info(f"Score: {score}")
-        logging.info(f"train_loss: {train_loss}, val_loss: {val_loss}")
+        logging.info(f"train_loss: {train_loss/len(train_loader)}, val_loss: {val_loss/len(val_loader)}")
 
         if epochs == 0 or val_loss == min(epoch_loss["val"]):
             save_model(model, config["model_path"])

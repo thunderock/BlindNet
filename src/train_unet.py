@@ -59,7 +59,7 @@ def calc_val_loss(model, loss_fn, loader):
             total_loss += loss.item()
     return total_loss
 
-def calc_scores(model, loader, loss_fn):
+def calc_scores(model, loader, loss_fn, weight = 1):
     scores = { "total": 0,"pred_idx_mask": [0 for i in range(91)], "pred_idx": [0 for i in range(91)] }
 
     logging.info("Calculating scores.")
@@ -68,11 +68,13 @@ def calc_scores(model, loader, loss_fn):
     total_loss = 0
 
     with torch.no_grad():
+        loader.dataset.visible_inference = False
         for inp_img, masked_labels, bboxes, cats in loader:
             inp_img = inp_img.to(device)
             masked_labels = masked_labels.to(device)
             masked_labels_pred = model(inp_img)
-            loss = loss_fn(masked_labels_pred, masked_labels)
+            # loss = loss_fn(masked_labels_pred, masked_labels)
+            loss = calc_loss(masked_labels_pred, masked_labels, inp_img, loss_fn, weight)
             total_loss += loss.item()
 
             for i in range(inp_img.shape[0]):
@@ -82,7 +84,23 @@ def calc_scores(model, loader, loss_fn):
                 box_cls_pred = masked_labels_pred[i][:, bboxes[i][0]: bboxes[i][0]+bboxes[i][2], bboxes[i][1]: bboxes[i][0]+bboxes[i][3]].sum(1).sum(1)
                 scores["pred_idx_mask"][torch.argsort(box_cls_pred)[cats[i].item()].item()] += 1
 
+        loader.dataset.visible_inference = True
+        for inp_img, masked_labels, bboxes, cats in loader:
+            inp_img = inp_img.to(device)
+            masked_labels = masked_labels.to(device)
+            masked_labels_pred = model(inp_img)
+            # loss = loss_fn(masked_labels_pred, masked_labels)
+            loss = calc_loss(masked_labels_pred, masked_labels, inp_img, loss_fn, weight)
+            total_loss += loss.item()
+
+            for i in range(inp_img.shape[0]):
+                if cats[i].item() == -1:
+                    continue
+                box_cls_pred = masked_labels_pred[i][:, bboxes[i][0]: bboxes[i][0]+bboxes[i][2], bboxes[i][1]: bboxes[i][0]+bboxes[i][3]].sum(1).sum(1)
+                scores["pred_idx"][torch.argsort(box_cls_pred)[cats[i].item()].item()] += 1
+
     loader.dataset.score_mode = False
+    loader.dataset.visible_inference = False
     return scores, total_loss
 
 def perform_inference(config):
@@ -124,6 +142,12 @@ def perform_inference(config):
                 top10cats.append(category_names[cls_pred_sort[i].item()])
         print(top10cats)
 
+def calc_loss(pred, target, inp, loss_fn, weight):
+    loss1 = loss_fn(pred * inp[:, 3].unsqueeze(1), target * inp[:, 3].unsqueeze(1)) * weight
+    loss2 = loss_fn(pred * ((inp[:, 3] == 0).unsqueeze(1)), target * ((inp[:,3] == 0).unsqueeze(1)))
+
+    return (loss1 + loss2) / (weight + 1)
+
 def train_model(config):
     model = UNet(config["init_channels"], config["total_categories"], config["bilinear"])
     model.to(device)
@@ -147,7 +171,8 @@ def train_model(config):
 
             masked_labels_pred = model(input_img)
 
-            loss = loss_fn(masked_labels_pred, masked_labels)
+            loss = calc_loss(masked_labels_pred, masked_labels, input_img, loss_fn, config["weight_mul"])
+            # loss = loss_fn(masked_labels_pred, masked_labels)
             loss = loss / config["grad_acc"]
             loss.backward()
 
@@ -158,11 +183,11 @@ def train_model(config):
             train_loss += loss.item()
 
         epoch_loss["train"].append(train_loss / len(train_loader))
-        scores, val_loss = calc_scores(model, val_loader, loss_fn)
+        scores, val_loss = calc_scores(model, val_loader, loss_fn, config["weight_mul"])
         epoch_loss["val"].append(val_loss / len(val_loader))
 
         logging.info(f"Scores: {scores}")
-        logging.info(f"train_loss: {train_loss}, val_loss: {val_loss}")
+        logging.info(f"train_loss: {train_loss/len(train_loader)}, val_loss: {val_loss/len(val_loader)}")
 
         if epochs == 0 or val_loss == min(epoch_loss["val"]):
             save_model(model, config["model_path"])
@@ -187,11 +212,12 @@ if __name__ == '__main__':
         "bilinear": False,
         "init_channels": 4,
         "bbox": True,
-        "batch_size": 22,
+        "batch_size": 18,
         "epochs": 100,
         "lr": 1e-3,
         "log_dir": "logs/",
-        "grad_acc": 4
+        "grad_acc": 4,
+        "weight_mul": 5
     }
 
     model_path = f"unet_{config['model_type']}_{'bilinear' if config['bilinear'] else 'transpose'}_{'bbox' if config['bbox'] else '$$'}_{config['inp_img_size']}_{config['batch_size']}.model"

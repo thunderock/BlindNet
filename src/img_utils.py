@@ -41,12 +41,13 @@ def create_img_meta_from_path(annot_path):
     data = read_annots_bbox(annot_path)
     return create_img_meta(data)
 
-def mask_img_with_bbox(img, bbox, fill_value = 0):
+def mask_img_with_bbox(img, bbox, fill_value = 0, visible_mask = False):
     bbox = bbox.long()
-    img[:, bbox[1]:bbox[1]+bbox[3], bbox[0]:bbox[0]+bbox[2]] = fill_value
+    if not visible_mask:
+        img[:, bbox[1]:bbox[1]+bbox[3], bbox[0]:bbox[0]+bbox[2]] = fill_value
     return img
 
-def mask_img(src_img, src_bboxes, tar_img, tar_bboxes, cats, total_categories = 80):
+def mask_img(src_img, src_bboxes, tar_img, tar_bboxes, cats, total_categories = 80, visible_mask = False):
     tar_masked_cls = torch.zeros(total_categories, tar_img.shape[1], tar_img.shape[1])
     masked_bbox = torch.zeros(1, src_img.shape[1], src_img.shape[1])
     if src_bboxes.shape[0]==0:
@@ -55,8 +56,8 @@ def mask_img(src_img, src_bboxes, tar_img, tar_bboxes, cats, total_categories = 
     masked_idx = random.randrange(src_bboxes.shape[0])
 
     src_masked_box, tar_masked_box = src_bboxes[masked_idx], tar_bboxes[masked_idx]
-    src_img = mask_img_with_bbox(src_img, src_masked_box, fill_value=0)
-    masked_bbox = mask_img_with_bbox(masked_bbox, tar_masked_box, fill_value=1)
+    src_img = mask_img_with_bbox(src_img, src_masked_box, fill_value=0, visible_mask = visible_mask)
+    masked_bbox = mask_img_with_bbox(masked_bbox, tar_masked_box, fill_value=1, visible_mask = visible_mask)
     for cls, bbox in zip(cats, tar_bboxes):
         tar_masked_cls[cls, bbox[1]:bbox[1]+bbox[3], bbox[0]:bbox[0]+bbox[2]] = 1
 

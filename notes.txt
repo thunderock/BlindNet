@@ -8,3 +8,5 @@
 * Compare with majority value????
 * WEIGHTED LOSS??
 * Pairwise suggestion method.
+
+* Check class wise predictions.

@@ -14,6 +14,7 @@ class MaskCocoDataset(Dataset):
         self.src_transformation, self.target_transformation = get_transformation(config) if train_dataset else get_val_transformation(config)
         self.total_categories = config["total_categories"]
         self.score_mode = False
+        self.visible_inference = False
 
     def __len__(self):
         return len(self.img_ids)
@@ -48,7 +49,7 @@ class MaskCocoDataset(Dataset):
         tar_img = tar_augs["image"]
         tar_bboxes = torch.tensor(tar_augs["bboxes"]).long()
 
-        src_img, tar_masked_cls, masked_bbox_channel, tar_masked_bbox, cat = mask_img(src_img, src_bboxes, tar_img, tar_bboxes, img_meta["cats"], self.total_categories)
+        src_img, tar_masked_cls, masked_bbox_channel, tar_masked_bbox, cat = mask_img(src_img, src_bboxes, tar_img, tar_bboxes, img_meta["cats"], self.total_categories, self.visible_inference)
         inp_img = torch.cat((src_img, masked_bbox_channel), dim=0)
 
         if not self.score_mode:
@@ -104,6 +105,7 @@ if __name__ == '__main__':
     }
     dataset = MaskCocoDataset(config["annotation_path"], config["img_dir_path"], config, train_dataset=False)
     dataset.score_mode = True
+    dataset.visible_inference = True
     loader = DataLoader(dataset = dataset, batch_size = 2, shuffle = False)
 
     print(len(dataset))
@@ -116,7 +118,8 @@ if __name__ == '__main__':
         assert tar_cls.shape[-1] == config["inp_img_size"]
         assert tar_cls.shape[-2] == config["inp_img_size"]
 
-        # if (i+1)%100 == 0:
-        #     plot_examples([inp_img.permute(1,2,0)[...,:3].numpy()])
+        # if (num_iter+1)%100 == 0:
+        plot_examples([inp_img[0].permute(1,2,0)[...,:3].numpy()])
+        num_iter += 1
 
     print("Done")
