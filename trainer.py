@@ -23,7 +23,7 @@ torch.cuda.manual_seed(YEAR)
 torch.backends.cudnn.deterministic = True
 
 class Trainer:
-    def __init__(self,  learning_rate=5e-4, epochs=20, batch_size=16, val_split=.3, image_size=84):
+    def __init__(self,  learning_rate=5e-4, epochs=200, batch_size=16, val_split=.3, image_size=84):
 
         # Define hparams here or load them from a config file
         self.learning_rate = learning_rate
@@ -118,8 +118,8 @@ class Trainer:
                     if loss < best_val_loss:
                         print('Saving model..... Loss improved from %.3f to %.3f' % (best_val_loss, loss))
                         best_val_loss = loss
-                        # torch.save(model.state_dict(), '{}.pt'.format(model_save_name))
-                    wandb.log({"validation_loss": loss, "epoch": epoch, "model_name": model_save_name})
+                        torch.save(model.state_dict(), '{}.pt'.format(model_save_name))
+                    # wandb.log({"validation_loss": loss, "epoch": epoch, "model_name": model_save_name})
             optimizer.step()
             scheduler.step(loss)
             # scheduler2.step(epoch + 1/self.epochs)
