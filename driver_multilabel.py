@@ -4,7 +4,7 @@
 # @Time:        5/3/22 12:51 AM
 from sweep_tuner import SweepTuner
 import wandb
-wandb.init(project="blindnet_multilabel_carbonate")
+wandb.init(project="blindnet_multilabel_new_weights_carbonate")
 trainer = SweepTuner(image_size=128)
 trainer.train_and_evaluate(
     model="resnet18",
