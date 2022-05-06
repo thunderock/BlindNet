@@ -9,6 +9,7 @@ img_id = {}
 ids = set()
 all_cats = set()
 org_ids = set()
+class_counts = {i:0 for i in range(91)}
 
 for k in data["annotations"]:
     if k["image_id"] not in img_id:
@@ -16,6 +17,7 @@ for k in data["annotations"]:
     ids.add(k["id"])
     img_id[k["image_id"]] += 1
     all_cats.add(k["category_id"])
+    class_counts[int(k["category_id"])] += 1
 
 for k in data["images"]:
     org_ids.add(k["id"])
@@ -27,3 +29,5 @@ print(len(img_id.keys()))
 print(sum(img_id.values()))
 
 print(" ".join([str(i) for i in org_ids if i not in img_id]))
+
+print(f"CLASS COUNTS: {class_counts}")

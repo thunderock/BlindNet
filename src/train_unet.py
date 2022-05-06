@@ -96,7 +96,7 @@ def calc_scores(model, loader, loss_fn, weight = 1):
             for i in range(inp_img.shape[0]):
                 if cats[i].item() == -1:
                     continue
-                box_cls_pred = masked_labels_pred[i][:, bboxes[i][0]: bboxes[i][0]+bboxes[i][2], bboxes[i][1]: bboxes[i][0]+bboxes[i][3]].sum(1).sum(1)
+                box_cls_pred = torch.sigmoid(masked_labels_pred[i][:, bboxes[i][0]: bboxes[i][0]+bboxes[i][2], bboxes[i][1]: bboxes[i][0]+bboxes[i][3]]).sum(1).sum(1)
                 scores["pred_idx"][torch.argsort(box_cls_pred)[cats[i].item()].item()] += 1
 
     loader.dataset.score_mode = False
@@ -118,12 +118,12 @@ def perform_inference(config):
     run_simul = True
 
     while run_simul:
-        img_id = 37988
+        img_id = 552842
         # plot_img(config, img_id)
         img, cls, categories = dataset.get_image_by_id(img_id)
         plt.imshow(img.permute(1,2,0)[..., :3].numpy())
         plt.show()
-        bbox = [80, 100, 200, 220]
+        bbox = [186, 250, 205, 280]
         img[:3, bbox[0]:bbox[1], bbox[2]: bbox[3]] = 0
         img[3, bbox[0]:bbox[1], bbox[2]: bbox[3]] = 1
 
