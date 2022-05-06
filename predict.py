@@ -5,9 +5,8 @@
 
 
 import sys
-import numpy as np
 import torch
-from modules.blind_net_fft import BlindNetFFT
+from modules.blind_net import BlindNet
 from PIL import Image, ImageDraw, ImageFont
 from data.data_loader import CocoDataset
 from torch.utils.data import DataLoader
@@ -29,7 +28,7 @@ if __name__ == '__main__':
     rgb_image = Image.open(image_path)
     # plt.imshow(rgb_image)
     # plt.show()
-    net = BlindNetFFT(image_size=image[0].shape[1])
+    net = BlindNet(image_size=image[0].shape[1])
     net.load_state_dict(torch.load(model_path))
     net.eval()
     result = net(image[0].unsqueeze(0))

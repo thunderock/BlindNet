@@ -1,4 +1,4 @@
-# @Filename:    blind_net_fft.py
+# @Filename:    blind_net.py
 # @Author:      Ashutosh Tiwari
 # @Email:       checkashu@gmail.com
 # @Time:        4/23/22 2:33 AM
@@ -8,10 +8,12 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torchvision.models as models
 
-class BlindNetFFT(nn.Module):
 
-    def __init__(self, model_name='resnet18', scale_factor=90, image_size=84):
-        super(BlindNetFFT, self).__init__()
+class BlindNet(nn.Module):
+
+    def __init__(self, model_name='resnet18', scale_factor=90, image_size=84, multi_label=False):
+        super(BlindNet, self).__init__()
+        self.multi_label = multi_label
         if model_name == 'resnet18':
             resnet = models.resnet18(pretrained=True)
         if model_name == 'resnet50':
@@ -41,7 +43,7 @@ class BlindNetFFT(nn.Module):
             nn.ReLU(),
             nn.Flatten()
         )
-        self.linear = nn.Sequential(nn.Linear(3072, 1024), nn.ReLU(), nn.Linear(1024, self.image_size * self.image_size * 91), nn.ReLU(), )
+        self.linear = nn.Sequential(nn.Linear(12288, 1024), nn.ReLU(), nn.Linear(1024, 91), nn.Sigmoid(), ) if multi_label else nn.Sequential(nn.Linear(3072, 1024), nn.ReLU(), nn.Linear(1024, self.image_size * self.image_size * 91), nn.ReLU(), )
 
     def forward(self, input):
         batch_size = input.size(0)
@@ -55,6 +57,8 @@ class BlindNetFFT(nn.Module):
         # x = F.log_softmax(output.view(batch_size, 91, self.image_size, self.image_size), dim=1)
         # print(x[0, :, 0, 0])
         # output should be batch_size * (256 * 256) * 91 *
+        if self.multi_label:
+            return output
         x = output.view(batch_size * self.image_size * self.image_size, 91)
         return x
         # x = torch.max(x, dim=1)[1]

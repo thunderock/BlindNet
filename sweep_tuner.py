@@ -10,14 +10,15 @@ import os
 import numpy as np
 from data.data_loader import CocoDataset
 from torch.utils.data import DataLoader, random_split
-from modules.blind_net_fft import BlindNetFFT
+from modules.blind_net import BlindNet
 import torch.nn as nn
 from torch.optim.lr_scheduler import CosineAnnealingLR, CosineAnnealingWarmRestarts, ReduceLROnPlateau
-from trainer import Trainer
+from trainer import Trainer, MultiLabelTrainer
 from tqdm import tqdm
 from torch import optim
-from PIL import Image, ImageOps
-import wandb
+import warnings
+
+warnings.filterwarnings("ignore")
 
 # from botorch.settings import suppress_botorch_warnings, validate_input_scaling
 # import optuna
@@ -111,11 +112,11 @@ class SweepTuner:
         else:
             raise ValueError('Unknown scheduler method')
 
-    def train_and_evaluate(self, model, learning_rate, batch_size, optimizer, scheduler, name, data_dir="."):
-        model = BlindNetFFT(image_size=self.image_size, model_name=model).to(self.device)
+    def train_and_evaluate(self, model, learning_rate, batch_size, optimizer, scheduler, name, data_dir=".", multilabel=False):
+        model = BlindNet(image_size=self.image_size, model_name=model, multi_label=multilabel).to(self.device)
         optimizer = self.get_optimizer(model, method=optimizer, learning_rate=learning_rate)
         scheduler = self.get_scheduler(optimizer, method=scheduler)
-        trainer = Trainer(learning_rate=learning_rate, batch_size=batch_size, image_size=self.image_size,)
+        trainer = MultiLabelTrainer(learning_rate=learning_rate, batch_size=batch_size, image_size=self.image_size) if multilabel else Trainer(learning_rate=learning_rate, batch_size=batch_size, image_size=self.image_size)
         loss = trainer.train_and_evaluate(model=model, model_save_name=name,scheduler=scheduler, optimizer=optimizer,data_dir=data_dir)
         del (trainer)
         gc.collect()
@@ -124,6 +125,7 @@ class SweepTuner:
 
 
 def train_sweep(con=None):
+    import wandb
     with wandb.init(config=con):
         import string, random
         letters = string.ascii_lowercase
@@ -216,13 +218,3 @@ def plot_study(study, path=None):
 
 # sweep_id = wandb.sweep(sweep_config, project="sweeps_blindnet_carbonate")
 # run = wandb.agent(sweep_id, train_sweep, count=20)
-trainner = SweepTuner(image_size=64)
-trainner.train_and_evaluate(
-    model="resnet18",
-    learning_rate=0.006197,
-    batch_size=32,
-    optimizer="adam",
-    scheduler="ReduceLROnPlateau",
-    name="temp",
-    data_dir='.'
-)
