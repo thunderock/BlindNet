@@ -13,6 +13,7 @@ from torchvision.transforms import functional as TF
 from pycocotools.coco import COCO
 from matplotlib.patches import Polygon
 from PIL import Image
+from torch.nn import functional as F
 from tqdm import tqdm
 
 
@@ -24,7 +25,7 @@ class CocoDataset(Dataset):
         return os.path.join(root_dir, dir, '{}.jpg'.format(x))
 
 
-    def __init__(self, annotations, image_root_dir, mask_root_dir, train, image_size=84, predict=False):
+    def __init__(self, annotations, image_root_dir, mask_root_dir, train, image_size=84, predict=False, multilabel=False):
         super().__init__()
         self.coco = COCO(annotations)
         self.img_ids = self.coco.getImgIds()
@@ -38,6 +39,7 @@ class CocoDataset(Dataset):
         self.train = train
         self.image_size = image_size
         self.predict = predict
+        self.multi_label = multilabel
 
     def write_masked_array(self, img_id):
         transformed_file = '../coco2017/cat_id_masked_arrays/{}/{}.npy'.format(self.dir, img_id)
@@ -132,8 +134,10 @@ class CocoDataset(Dataset):
         # # assert size of distint_cats is at least 2
         # assert len(distinct_cats) >= 1
         random_cat = distinct_cats[torch.randint(0, len(distinct_cats), (1,))]
-        # y_hat = torch.clone(y)
-        # y[y == random_cat] = -1
+
+        if self.multi_label:
+            distinct_cats = F.one_hot(distinct_cats.long(), num_classes=91)
+            y = distinct_cats.sum(dim=0).float()
         # X is the image, y is the mask, random_cat is a random cat id in the mask
         if self.predict:
             return X, y, random_cat, img_path
